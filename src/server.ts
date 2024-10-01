@@ -1,1 +1,1 @@
-console.log("NodeJS🚀🚀");
+console.log("Node.JS🚀🚀");
