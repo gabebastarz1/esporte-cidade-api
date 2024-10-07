@@ -13,7 +13,7 @@ export class UserBase extends BaseEntity{
     @Column()
     password: string;
 
-    @Column({length: 11, unique: true})
+    @Column({length: 11, unique: true})//cpf deve ser guardado sem formatação
     cpf: string;
 
     @Column()
