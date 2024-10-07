@@ -1,20 +1,24 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Address } from "./address.entity";
+import { Roles } from "../enums/roles.enum";
 
 @Entity('user-base')
-export class UserBase{
+export abstract class UserBase {
 
     @PrimaryGeneratedColumn()
     id: number;
 
     @Column()
-    name:string;
+    name: string;
 
     @Column()
     password: string;
 
-    @Column({length: 11, unique: true})//cpf deve ser guardado sem formatação
+    @Column({ length: 11, unique: false })//cpf deve ser guardado sem formatação
     cpf: string;
+
+    @Column({ nullable: true })
+    rg: string;
 
     @Column()
     birthday: string;
@@ -22,10 +26,10 @@ export class UserBase{
     @Column()
     phone: string
 
-    @Column({nullable: true})
-    photoUrl: string;
+    @Column({ nullable: true })
+    photo_url: string;
 
-    @Column({unique: true})
+    @Column({ unique: true, nullable: true })
     email: string;
 
     @OneToMany(() => Address, (address) => address.user, {
@@ -33,6 +37,7 @@ export class UserBase{
     })
     addresses: Address[]
 
-    @Column()
-    level: number;
+    //trocar para enum antes de subir para produção 
+    @Column({type: "int", enum: Roles})
+    role: Roles;
 }
