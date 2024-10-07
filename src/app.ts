@@ -12,6 +12,19 @@ const dbFile = "db.sqlite";
 if (existsSync(dbFile)) unlinkSync(dbFile);
 
 
+AppDataSource.initialize()
+.then(async () => {
+  console.log('Database connected');
+  
+  AppDataSource.entityMetadatas.forEach(metadata => {
+    console.log(`Load: Entity: ${metadata.name}, Table: ${metadata.tableName}`);
+});
+})
+.catch((error) => {
+  console.error('Database connection error:', error);
+});
+  
+
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));

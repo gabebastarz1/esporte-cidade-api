@@ -9,7 +9,7 @@ export const AppDataSource = new DataSource({
     // password: 'senha',
     database: 'db.sqlite',
     // url:"",
-    synchronize: true,//sincroniza as alterações com o banco
+    synchronize: false,//sincroniza as alterações com o banco
     logging: true,// loga as queries do banco
     entities: ["src/entities/*{.ts,.js}"],
   });
