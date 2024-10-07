@@ -1,7 +1,7 @@
 import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Address } from "./address.entity";
 
-@Entity()
+@Entity('user-base')
 export class UserBase extends BaseEntity{
 
     @PrimaryGeneratedColumn()
