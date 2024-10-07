@@ -30,5 +30,4 @@ export class Address{
 
     @ManyToOne(() => UserBase, {onDelete: "CASCADE"})
     user: UserBase
-
 }

@@ -1,4 +1,5 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Address } from "./address.entity";
 
 @Entity()
 export class UserBase extends BaseEntity{
@@ -26,4 +27,12 @@ export class UserBase extends BaseEntity{
 
     @Column({unique: true})
     email: string;
+
+    @OneToMany(() => Address, (address) => address.user, {
+        eager: true,
+    })
+    addresses: Address[]
+
+    @Column()
+    level: number;
 }
