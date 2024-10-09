@@ -5,10 +5,10 @@ export class Material {
     @PrimaryGeneratedColumn()
     id: number
 
-    @Column()
+    @Column("text")
     name: string;
 
-    @Column({ default: "Sem descrição", nullable: true })
+    @Column({ type: "text", default: "Sem descrição", nullable: true })
     description: string;
 
     @Column({ type: 'int', default: 0 })
