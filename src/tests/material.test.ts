@@ -1,18 +1,19 @@
-
+import { describe, it, skip, beforeEach } from "node:test";
 import app from "../app";
-import { describe, it, skip } from "node:test";
 import request from "supertest";
-import assert from "node:assert";
+
+// Esse loop irá rodar antes de cada teste para setar o estado inicial do banco de dados de teste.
+beforeEach(() => { })
 
 describe("Testing the Material router", () => {
     describe("GET request", () => {
 
         it("should throw a error when requesting an invalid ID", () => {
-            
+
             request(app)
-                .get("/")
+                .get("/-1")
                 .expect("Content-Type", /json/)
-                .expect(200)
+                .expect(400)
                 .end((err, res) => {
                     if (err) throw err;
                 })
