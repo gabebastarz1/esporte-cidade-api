@@ -12,7 +12,6 @@ router.get("/", async (req, res) => {
     console.log(materials);
     
     res.send(materials);
-
 });
 
 export default router;

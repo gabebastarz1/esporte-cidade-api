@@ -15,5 +15,11 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "resolveJsonModule": true
-  }
+  },
+  "include": [
+    "src/**/*.ts"
+  ], // Incluindo todos os arquivos TypeScript
+  "exclude": [
+    "node_modules"
+  ]
 }
