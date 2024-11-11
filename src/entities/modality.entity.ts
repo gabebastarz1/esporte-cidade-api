@@ -6,15 +6,15 @@ import { Athlete } from "./athlete.entity";
 @Entity("modality")
 export class Modality {
     @PrimaryGeneratedColumn()
-    id: number
+    id: number;
 
-    @Column()
+    @Column("text")
     name: string;
 
-    @Column()
+    @Column("text")
     description: string;
 
-    //trocar para enum antes de subir para produção
+    // Trocar para enum antes de subir para produção
     @Column({ type: "text", enum: DaysOfWeek, array: true })
     days_of_week: DaysOfWeek[];
 

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "cross-env NODE_ENV=test node --test --import tsx src/tests/**/*.test.ts",
     "dev": "nodemon --watch \"src/\" -r \"tsconfig-paths/register\" --exec \"ts-node src/server.ts\" -e ts --env-file .env"
   },
   "author": "",
@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "@types/express": "^5.0.0",
+    "bcrypt": "^5.1.1",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "mysql2": "^3.11.3",
@@ -22,7 +23,10 @@
   },
   "devDependencies": {
     "@types/node": "^22.7.4",
+    "cross-env": "^7.0.3",
+    "supertest": "^7.0.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.1",
     "typescript": "^5.6.2"
   }
 }

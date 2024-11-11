@@ -8,36 +8,36 @@ export abstract class UserBase {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column("text")
     name: string;
 
-    @Column()
+    @Column("text")
     password: string;
 
-    @Column({ length: 11, unique: false })//cpf deve ser guardado sem formatação
+    @Column({ type: "text", length: 11, unique: false }) // CPF deve ser guardado sem formatação
     cpf: string;
 
-    @Column({ nullable: true })
+    @Column("text", { nullable: true })
     rg: string;
 
-    @Column()
+    @Column("text")
     birthday: string;
 
-    @Column()
-    phone: string
+    @Column("text")
+    phone: string;
 
-    @Column({ nullable: true })
+    @Column("text", { nullable: true })
     photo_url: string;
 
-    @Column({ unique: true, nullable: true })
+    @Column("text", { unique: true, nullable: true })
     email: string;
 
     @OneToMany(() => Address, (address) => address.user, {
         eager: true,
     })
-    addresses: Address[]
+    addresses: Address[];
 
-    //trocar para enum antes de subir para produção 
-    @Column({type: "int", enum: Roles})
+    // Trocar para enum antes de subir para produção
+    @Column({ type: "int", enum: Roles })
     role: Roles;
 }

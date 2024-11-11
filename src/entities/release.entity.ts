@@ -7,19 +7,17 @@ export class Release {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column("text")
     title: string;
 
-    @Column()
+    @Column("text")
     content: string;
 
-    //trocar para enum quando subir para produção
+    // Trocar para enum quando subir para produção
     @Column({ type: "text", enum: Priority, default: Priority.LOW })
     priority: Priority;
 
-    //trocar o type para timestamp quando subir para produção 
-    @CreateDateColumn({type:"date", default: () => "CURRENT_TIMESTAMP"})
+    // Trocar o type para timestamp quando subir para produção
+    @CreateDateColumn({ type: "date", default: () => "CURRENT_TIMESTAMP" })
     created_at: Date;
-
 }
-

@@ -2,32 +2,32 @@ import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { UserBase } from "./user-base.entity";
 
 @Entity('address')
-export class Address{
+export class Address {
 
     @PrimaryGeneratedColumn()
-    id: number
+    id: number;
 
-    @Column()
+    @Column("text")
     state: string;
 
-    @Column()
+    @Column("text")
     city: string;
 
-    @Column()
+    @Column("text")
     neighborhood: string;
 
-    @Column()
+    @Column("text")
     street: string;
 
-    @Column()
+    @Column("int")
     number: number;
 
-    @Column()
+    @Column("text")
     complement: string;
 
-    @Column()
+    @Column("text")
     references: string;
 
-    @ManyToOne(() => UserBase, {onDelete: "CASCADE"})
-    user: UserBase
+    @ManyToOne(() => UserBase, { onDelete: "CASCADE" })
+    user: UserBase;
 }
