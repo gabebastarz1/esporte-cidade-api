@@ -6,6 +6,8 @@ import app from "../app";
 import request from "supertest";
 import { Roles } from "src/enums/roles.enum";
 
+const BASE_URL = "/api/userbase/";
+
 beforeEach(async () => {
     if (AppDataSource.isInitialized) {
         await AppDataSource.destroy();
@@ -58,7 +60,7 @@ describe("Testing the User Base router", () => {
     describe("GET request", () => {
         it("should get all users", async () => {
             const res = await request(app)
-                .get("/api/userbase/")
+                .get(BASE_URL)
                 .expect("Content-Type", /json/)
                 .expect(200);
 
@@ -89,7 +91,7 @@ describe("Testing the User Base router", () => {
             };
 
             const res = await request(app)
-                .post("/api/userbase/")
+                .post(BASE_URL)
                 .send(newUser)
                 .expect("Content-Type", /json/)
                 .expect(201);
@@ -113,7 +115,7 @@ describe("Testing the User Base router", () => {
             };
 
             const createRes = await request(app)
-                .post("/api/userbase/")
+                .post(BASE_URL)
                 .send(tempUser)
                 .expect(201);
 
@@ -147,7 +149,7 @@ describe("Testing the User Base router", () => {
             };
 
             const createRes = await request(app)
-                .post("/api/userbase/")
+                .post(BASE_URL)
                 .send(tempUser)
                 .expect(201);
 

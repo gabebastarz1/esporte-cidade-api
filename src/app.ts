@@ -3,6 +3,7 @@ import * as dotenv from "dotenv";
 import { existsSync, unlinkSync } from "fs";
 import materialRoute from "./routes/material";
 import userRoute from "./routes/userBase";
+import managerRoute from "./routes/manager";
 
 dotenv.config();
 
@@ -16,5 +17,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use("/api/material/", materialRoute);
 app.use("/api/userbase/", userRoute);
+app.use("/api/manager/", managerRoute);
 
 export default app;
