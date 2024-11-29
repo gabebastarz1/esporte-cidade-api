@@ -14,7 +14,6 @@ export class Modality {
     @Column("text")
     description: string;
 
-    // Trocar para enum antes de subir para produção
     @Column({ type: "text", enum: DaysOfWeek, array: true })
     days_of_week: DaysOfWeek[];
 
