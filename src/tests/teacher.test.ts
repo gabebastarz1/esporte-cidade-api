@@ -1,53 +1,26 @@
-import { describe, it, beforeEach, afterEach } from "node:test";
-import { strict as assert } from "node:assert";
-import { Teacher } from "../entities/teacher.entity";
-import { AppDataSource } from "../database/config";
-import app from "../app";
-import request from "supertest";
-import { Roles } from "../enums/roles.enum";
+import { describe, it, beforeEach, before, after } from "node:test";
 import { Modality } from "src/entities/modality.entity";
 import { DaysOfWeek } from "src/enums/daysOfWeek.enum";
+import { Teacher } from "../entities/teacher.entity";
+import { AppDataSource } from "../database/config";
+import { strict as assert } from "node:assert";
+import { Roles } from "../enums/roles.enum";
+import request from "supertest";
+import app from "../app";
 
 const BASE_URL = "/api/teacher/";
 
-beforeEach(async () => {
+before(async () => {
     if (AppDataSource.isInitialized) {
         await AppDataSource.destroy();
     }
-
     await AppDataSource.initialize();
+});
 
-    const modalityRepository = AppDataSource.getRepository(Modality);
+beforeEach(async () => {
     const teacherRepository = AppDataSource.getRepository(Teacher);
 
-    await modalityRepository.clear();
     await teacherRepository.clear();
-
-    // Criar modalidades de exemplo
-    const modalities = [
-        {
-            name: "Yoga",
-            description: "Exercício relaxante e fortalecedor.",
-            days_of_week: [DaysOfWeek.SEGUNDA, DaysOfWeek.QUARTA, DaysOfWeek.SABADO],
-            start_time: "08:00",
-            end_time: "10:00",
-            class_locations: ["Sala 1", "Sala 2"],
-        },
-        {
-            name: "Natação",
-            description: "Melhore suas habilidades de natação com treino profissional.",
-            days_of_week: [DaysOfWeek.TERCA, DaysOfWeek.QUINTA],
-            start_time: "14:00",
-            end_time: "16:00",
-            class_locations: ["Piscina 1"],
-        },
-    ];
-
-    const savedModalities = [];
-    for (const modality of modalities) {
-        const savedModality = await modalityRepository.save(modality);
-        savedModalities.push(savedModality);
-    }
 
     const teachers = [
         {
@@ -60,7 +33,7 @@ beforeEach(async () => {
             photo_url: "https://example.com/photos/teacheralice.jpg",
             email: `teacheralice-${Date.now()}@example.com`,
             about: "Instrutora experiente de yoga.",
-            modality: savedModalities[0],
+            modality: 1,
             role: Roles.TEACHER,
         },
         {
@@ -73,7 +46,7 @@ beforeEach(async () => {
             photo_url: "https://example.com/photos/teacherbob.jpg",
             email: `teacherbob-${Date.now()}@example.com`,
             about: "Treinador de natação com mais de 10 anos de experiência.",
-            modality: savedModalities[1],
+            modality: 1,
             role: Roles.TEACHER,
         },
     ];
@@ -84,7 +57,7 @@ beforeEach(async () => {
 });
 
 
-afterEach(async () => {
+after(async () => {
     if (AppDataSource.isInitialized) {
         await AppDataSource.destroy();
     }

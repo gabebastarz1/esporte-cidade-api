@@ -1,16 +1,20 @@
 import express, { Request, Response } from "express";
-import bcrypt from "bcrypt";
 import { AppDataSource } from "../database/config";
-import { Teacher } from "../entities/teacher.entity"; // Atualizando para Teacher
+import { Teacher } from "../entities/teacher.entity";
 import { Roles } from "../enums/roles.enum";
+import bcrypt from "bcrypt";
 
 const router = express.Router();
-const teacherRepository = AppDataSource.getRepository(Teacher); // Alterando para teacherRepository
+const teacherRepository = AppDataSource.getRepository(Teacher);
 
 router
     .get("/", async (req: Request, res: Response) => {
         try {
-            const teachers = await teacherRepository.find(); // Buscando professores
+            const teachers = await teacherRepository.find({
+                relations: ["modality"],
+            });
+            console.log(teachers);
+            
             res.json(teachers);
         } catch (error) {
             console.error("Erro ao buscar professores:", error.message);
@@ -26,7 +30,7 @@ router
                 return res.status(400).json("ID de professor inválido.");
             }
 
-            const teacher = await teacherRepository.findOneBy({ id: teacherId }); // Buscando professor por ID
+            const teacher = await teacherRepository.findOneBy({ id: teacherId });
             if (!teacher) {
                 return res.status(404).json("Professor não encontrado.");
             }
@@ -41,7 +45,7 @@ router
         try {
             const teacher = teacherRepository.create({
                 ...req.body,
-                role: Roles.TEACHER, // Atribuindo o papel de professor
+                role: Roles.TEACHER,
             });
 
             await teacherRepository.save(teacher);
