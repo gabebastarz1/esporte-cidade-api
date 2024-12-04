@@ -1,8 +1,8 @@
-import express from "express";
-import * as dotenv from "dotenv";
+import { athleteRouter, managerRouter, materialRouter, modalityRouter, teacherRouter } from "./routes";
 import { existsSync, unlinkSync } from "fs";
-import materialRoute from "./routes/material";
-import userRoute from "./routes/userBase";
+import * as dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
 
 dotenv.config();
 
@@ -12,9 +12,13 @@ if (existsSync(dbFile)) unlinkSync(dbFile);
 
 const app = express();
 
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use("/api/material/", materialRoute);
-app.use("/api/userbase/", userRoute);
+app.use("/api/material/", materialRouter);
+app.use("/api/userbase/", athleteRouter);
+app.use("/api/manager/", managerRouter);
+app.use("/api/teacher/", teacherRouter);
+app.use("/api/modality/", modalityRouter);
 
 export default app;

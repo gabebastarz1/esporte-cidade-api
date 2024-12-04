@@ -18,7 +18,7 @@
   },
   "include": [
     "src/**/*.ts"
-  ], // Incluindo todos os arquivos TypeScript
+, "src/tests/teacher.test.js"  ], // Incluindo todos os arquivos TypeScript
   "exclude": [
     "node_modules"
   ]

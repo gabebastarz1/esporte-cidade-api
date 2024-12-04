@@ -14,9 +14,8 @@ export class Modality {
     @Column("text")
     description: string;
 
-    // Trocar para enum antes de subir para produção
-    @Column({ type: "text", enum: DaysOfWeek, array: true })
-    days_of_week: DaysOfWeek[];
+    @Column({ type: "text", array: true })
+    days_of_week: string[];
 
     @Column({ type: "time" })
     start_time: string;
