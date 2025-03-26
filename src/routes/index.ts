@@ -4,3 +4,4 @@ export {default as modalityRouter} from "./modality";
 export {default as teacherRouter} from "./teacher";
 export {default as athleteRouter} from "./userBase";
 export {default as authRouter} from "./auth"
+export {default as enrollmentRouter} from "./enrollment"

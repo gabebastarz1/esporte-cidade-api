@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToMany } from "typeorm";
+import { Column, Entity, ManyToMany, OneToMany } from "typeorm";
 import { UserBase } from "./user-base.entity";
 import { Atendiment } from "./atendiment.entity";
 import { Modality } from "./modality.entity";
@@ -58,9 +58,6 @@ export class Athlete extends UserBase {
 
   @ManyToMany(() => Atendiment, (atendiment) => atendiment.athletes, {})
   atendiments: Atendiment[];
-
-  @ManyToMany(() => Modality, (modality) => modality.registred_athletes)
-  modalities: Modality[];
 
   @OneToMany(() => Enrollment)
   enrollments: Enrollment[];

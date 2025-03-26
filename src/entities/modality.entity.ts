@@ -39,9 +39,6 @@ export class Modality {
   })
   teachers: Teacher[];
 
-  @ManyToMany(() => Athlete, (athlete) => athlete.modalities)
-  registred_athletes: Athlete[];
-
   @OneToMany(() => Enrollment)
   enrollments: Enrollment[];
 }
