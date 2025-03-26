@@ -1,7 +1,8 @@
-import { Column, Entity, ManyToMany } from "typeorm";
+import { Column, Entity, ManyToMany, OneToMany } from "typeorm";
 import { UserBase } from "./user-base.entity";
 import { Atendiment } from "./atendiment.entity";
 import { Modality } from "./modality.entity";
+import { AthleteToModality } from "./athleteToModality.entity";
 
 @Entity('athlete')
 export class Athlete extends UserBase {
@@ -55,4 +56,7 @@ export class Athlete extends UserBase {
 
     @ManyToMany(() => Modality, (modality) => modality.registred_athletes)
     modalities: Modality[];
+
+    @OneToMany(() => AthleteToModality, (athleteToModality) => athleteToModality.athlete)
+    athleteToModality: AthleteToModality[];
 }

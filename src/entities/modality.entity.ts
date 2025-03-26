@@ -2,6 +2,7 @@ import { DaysOfWeek } from "../enums/daysOfWeek.enum";
 import { Column, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Teacher } from "./teacher.entity";
 import { Athlete } from "./athlete.entity";
+import { AthleteToModality } from "./athleteToModality.entity";
 
 @Entity("modality")
 export class Modality {
@@ -31,4 +32,7 @@ export class Modality {
 
     @ManyToMany(() => Athlete, (athlete) => athlete.modalities)
     registred_athletes: Athlete[];
+
+    @OneToMany(() => AthleteToModality, (athleteToModality) => athleteToModality.modality)
+    athleteToModality: AthleteToModality[];
 }
