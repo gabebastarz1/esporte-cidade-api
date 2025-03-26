@@ -1,19 +1,28 @@
-import { CreateDateColumn, Entity, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import {
+  CreateDateColumn,
+  Entity,
+  ManyToMany,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 import { Modality } from "./modality.entity";
 import { Athlete } from "./athlete.entity";
+import { Column } from "typeorm";
 
-@Entity('atendiment')
+@Entity("atendiment")
 export class Atendiment {
-    
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @CreateDateColumn({ type: "date" })
-    created_at: Date;
+  @CreateDateColumn({ type: "date", default: () => "CURRENT_TIMESTAMP" })
+  created_at: Date;
 
-    @ManyToOne(() => Modality, { onDelete: "SET NULL" })
-    modality: Modality;
+  @ManyToOne(() => Modality, { onDelete: "SET NULL" })
+  modality: Modality;
 
-    @ManyToMany(() => Athlete, (athlete) => athlete.atendiments)
-    athletes: Athlete[];
+  @ManyToOne(() => Athlete)
+  athlete: Athlete;
+
+  @Column()
+  present: boolean;
 }
