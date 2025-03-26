@@ -54,9 +54,6 @@ export class Athlete extends UserBase {
     @ManyToMany(() => Atendiment, (atendiment) => atendiment.athletes, {})
     atendiments: Atendiment[];
 
-    @ManyToMany(() => Modality, (modality) => modality.registred_athletes)
-    modalities: Modality[];
-
     @OneToMany(() => AthleteToModality, (athleteToModality) => athleteToModality.athlete)
     athleteToModality: AthleteToModality[];
 }

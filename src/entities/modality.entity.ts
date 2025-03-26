@@ -30,9 +30,6 @@ export class Modality {
     @OneToMany(() => Teacher, (teacher) => teacher.modality, { onDelete: "SET NULL" })
     teachers: Teacher[];
 
-    @ManyToMany(() => Athlete, (athlete) => athlete.modalities)
-    registred_athletes: Athlete[];
-
     @OneToMany(() => AthleteToModality, (athleteToModality) => athleteToModality.modality)
     athleteToModality: AthleteToModality[];
 }
