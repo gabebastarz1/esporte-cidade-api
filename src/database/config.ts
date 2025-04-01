@@ -1,6 +1,4 @@
 import { DataSource } from 'typeorm';
-import { Modality } from "../entities/modality.entity";
-import { DaysOfWeek } from "../enums/daysOfWeek.enum";
 import 'reflect-metadata';
 import env from "../environment/env";
 
@@ -12,7 +10,7 @@ export const AppDataSource = new DataSource({
   // password: 'senha',
   database: env.NODE_ENV ? 'db.test.sqlite' : 'db.sqlite',
   // url:"",
-  synchronize: true, //sincroniza as alterações com o banco
+  synchronize: false, //sincroniza as alterações com o banco
   logging: false, // loga as queries do banco
   entities: ["src/entities/*{.ts,.js}"],
 });

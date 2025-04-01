@@ -22,6 +22,6 @@ export class Atendiment {
   @ManyToOne(() => Athlete)
   athlete: Athlete;
 
-  @Column()
+  @Column("boolean")
   present: boolean;
 }
