@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { AppDataSource } from "../database/config";
 import { Modality } from "../entities/modality.entity";
-import { Atendiment } from "src/entities/atendiment.entity";
+import { Atendiment } from "../entities/atendiment.entity";
 
 const router = express.Router();
 const modalityRepository = AppDataSource.getRepository(Modality);
@@ -27,25 +27,27 @@ router.get("/:id/athletes-availible", async (req: Request, res: Response) => {
   const athletes_availible = await modalityRepository.find({
     where: {
       id,
-      registred_athletes: {
-        enrollments: {
+      enrollments: {
           active: true,
           aproved: true,
-        },
       },
     },
     select: {
-      registred_athletes: {
-        name: true,
-        cpf: true,
-        id: true,
+      enrollments: {
+        athlete: {
+          name: true,
+          cpf: true,
+          id: true,
+        }
       },
       name: true,
       id: true,
     },
     order: {
-      registred_athletes: {
-        name: "ASC",
+      enrollments: {
+        athlete: {
+          name: "ASC",
+        }
       },
     },
     relations: ["registred_athletes", "registred_athletes.enrollments"],
