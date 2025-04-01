@@ -28,11 +28,9 @@ export class Enrollment {
   @UpdateDateColumn({ type: "date", default: () => "CURRENT_TIMESTAMP" })
   updated_at: Date;
 
-  @PrimaryColumn()
   @ManyToOne(() => Athlete)
   athlete: Athlete;
 
-  @PrimaryColumn()
   @ManyToOne(() => Modality)
   modality: Modality;
 }

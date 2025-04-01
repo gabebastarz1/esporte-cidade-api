@@ -1,15 +1,12 @@
-import { DaysOfWeek } from "../enums/daysOfWeek.enum";
 import {
   Column,
   Entity,
-  ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
 import { Teacher } from "./teacher.entity";
-import { Athlete } from "./athlete.entity";
-import { ManyToOne } from "typeorm";
 import { Enrollment } from "./enrollment.entity";
+import { Atendiment } from "./atendiment.entity";
 
 @Entity("modality")
 export class Modality {
@@ -39,6 +36,9 @@ export class Modality {
   })
   teachers: Teacher[];
 
-  @OneToMany(() => Enrollment)
+  @OneToMany(() => Atendiment, (a) => a.modality)
+  atendiments: Atendiment[];
+
+  @OneToMany(() => Enrollment, (e) => e.modality)
   enrollments: Enrollment[];
 }
