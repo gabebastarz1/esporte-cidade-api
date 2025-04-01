@@ -3,8 +3,6 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
-  OneToOne,
-  PrimaryColumn,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
@@ -16,10 +14,10 @@ export class Enrollment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ default: false })
+  @Column({ type: "boolean", default: false })
   active: boolean;
 
-  @Column({ default: false })
+  @Column({ type: "boolean", default: false })
   aproved: boolean;
 
   @CreateDateColumn({ type: "date", default: () => "CURRENT_TIMESTAMP" })
