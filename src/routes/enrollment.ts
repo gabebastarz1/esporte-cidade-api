@@ -9,14 +9,18 @@ router.post("/", async (req: Request, res: Response) => {
     try {
         const { userId, modalityId } = req.body;
 
-        console.log("\n\n");
-        console.log(`user id: ${userId}`);
-        console.log(`modality id: ${modalityId}`);
-        console.log("\n\n");
-
         res.status(500).json({message: "not implemented."});
     } catch (error) {
         console.error("error message", error.message);
+        
+        res.status(500).json({ message: "error message", error: error.message });
+    }
+});
+
+router.get("/", async (req: Request, res: Response) => {
+    try {
+        res.status(500).json({message: "not implemented."});
+    } catch (error) {
         res.status(500).json({ message: "error message", error: error.message });
     }
 });
