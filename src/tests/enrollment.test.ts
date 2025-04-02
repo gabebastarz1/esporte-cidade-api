@@ -47,7 +47,7 @@ describe("testing enrollment", () => {
 
         const [_, countBefore] = await enrollmentRepository.findAndCount();
 
-        await request(app)
+        const response = await request(app)
             .post(BASE_URL)
             .send(
                 {
@@ -58,15 +58,25 @@ describe("testing enrollment", () => {
             .expect('Content-Type', /json/)
             .expect(201)
 
+        console.log(response.body);
+            
+
+        const newEnrollment = response.body;
+
+        assert.strictEqual(newEnrollment.modality.id, modalityId);
+        assert.strictEqual(newEnrollment.athlete.id, athleteId);
+
         const [__, countAfter] = await enrollmentRepository.findAndCount();
 
         assert.notStrictEqual(countBefore, countAfter);
     });
-    test("all enrollments can be fetched", async () => {        
-        const receivedEnrollments = await request(app)
+    test("all enrollments can be fetched", async () => {
+        const response = await request(app)
             .get(BASE_URL)
             .expect('Content-Type', /json/)
-            .expect(200)
+            .expect(200);
+
+        const receivedEnrollments = response.body;
 
         assert.equal(receivedEnrollments.length, enrollmentsPlaceholder.length);
     });
