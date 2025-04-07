@@ -5,25 +5,26 @@ import { Modality } from "../entities/modality.entity";
 import { Enrollment } from "../entities/enrollment.entity";
 
 const router = express.Router();
-const enrollmentRepository = AppDataSource.getRepository(Athlete);
+const enrollmentRepository = AppDataSource.getRepository(Enrollment);
 
 router.post("/", async (req: Request, res: Response) => {
     try {
         const { athleteId, modalityId } = req.body;
 
-        const athlete = await AppDataSource.getRepository(Athlete).findOneBy({id: athleteId});
-        const modality = await AppDataSource.getRepository(Modality).findOneBy({id: modalityId});
+        const athlete = await AppDataSource.getRepository(Athlete).findOneBy({ id: athleteId });
+        const modality = await AppDataSource.getRepository(Modality).findOneBy({ id: modalityId });
 
-        const enrollment = new Enrollment();
-        enrollment.athlete = athlete;
-        enrollment.modality = modality;
-
+        const enrollment = enrollmentRepository.create(
+            {
+                athlete,
+                modality
+            }
+        );
         await enrollmentRepository.save(enrollment);
-
         res.status(201).json(enrollment);
     } catch (error) {
         console.error("error message", error.message);
-        
+
         res.status(500).json({ message: "error message", error: error.message });
     }
 });
