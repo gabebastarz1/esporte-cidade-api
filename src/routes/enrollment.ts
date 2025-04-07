@@ -31,7 +31,12 @@ router.post("/", async (req: Request, res: Response) => {
 
 router.get("/", async (req: Request, res: Response) => {
     try {
+        const filters = req.params;
         const enrollments = await enrollmentRepository.find();
+
+        console.log("\n\n");        
+        console.log(filters);        
+        console.log("\n\n");        
 
         res.status(200).json(enrollments);
     } catch (error) {
