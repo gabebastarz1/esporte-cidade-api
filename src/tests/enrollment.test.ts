@@ -71,8 +71,14 @@ describe("testing enrollment", () => {
         assert.notStrictEqual(countBefore, countAfter);
     });    
     test("approved athlete enrollments can be visualized", async () => {
-        const athlete = await athleteRepository.find[0];
+        const athletes = await athleteRepository.find();
+        const athlete = athletes[0];
+
         const enrollments = await enrollmentRepository.findOneBy({ athlete: athlete, aproved: true, active: true });
+
+        console.log("\n\n");
+        console.log(athlete);
+        console.log("\n\n");
 
         const response = await request(app)
             .get(`${BASE_URL}/${athlete.id}?approved=true&active=true`)
