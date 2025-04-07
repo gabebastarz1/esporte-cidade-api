@@ -9,17 +9,15 @@ const modalityRepository = AppDataSource.getRepository(Modality);
 const athleteRepository = AppDataSource.getRepository(Athlete);
 
 export const createPlaceholderEnrollments = async () => {
-    let i = 0;
-    for (var enrollment of enrollmentsPlaceholder) {
-        const newEnrollment = enrollmentRepository.create(enrollment);
+    const modalities = await modalityRepository.find();
+    const athletes = await athleteRepository.find();
 
-        const modalities = await modalityRepository.find();
-        const athletes = await athleteRepository.find();
+    for (let i = 0, j = 0; i < 2; i++, j++) {
+        const newEnrollment = enrollmentRepository.create(enrollmentsPlaceholder[j]);
 
+        newEnrollment.athlete = athletes[0];
         newEnrollment.modality = modalities[i];
-        newEnrollment.athlete = athletes[i];
 
         await enrollmentRepository.save(newEnrollment);
-        i++;
     }
 }
