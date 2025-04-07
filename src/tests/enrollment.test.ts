@@ -59,7 +59,7 @@ describe("testing enrollment", () => {
             .expect(201)
 
         console.log(response.body);
-            
+
 
         const newEnrollment = response.body;
 
@@ -69,15 +69,30 @@ describe("testing enrollment", () => {
         const [__, countAfter] = await enrollmentRepository.findAndCount();
 
         assert.notStrictEqual(countBefore, countAfter);
-    });
-    test("all enrollments can be fetched", async () => {
+    });    
+    test("approved athlete enrollments can be visualized", async () => {
+        const athlete = await athleteRepository.find[0];
+        const enrollments = await enrollmentRepository.findOneBy({ athlete: athlete, aproved: true, active: true });
+
         const response = await request(app)
-            .get(BASE_URL)
+            .get(`${BASE_URL}/${athlete.id}?approved=true&active=true`)
             .expect('Content-Type', /json/)
             .expect(200);
 
         const receivedEnrollments = response.body;
 
-        assert.equal(receivedEnrollments.length, enrollmentsPlaceholder.length);
+        assert.equal(receivedEnrollments, enrollments);
+    })
+    test("all approved enrolments can be visualized", async () => {
+        const dbEnrollements = await enrollmentRepository.findBy({aproved: true});
+
+        const response = await request(app)
+            .get(`${BASE_URL}?approved=true`)
+            .expect('Content-Type', /json/)
+            .expect(200);
+
+        const receivedEnrollments = response.body;
+
+        assert.equal(receivedEnrollments.length, dbEnrollements.length);
     });
 })
