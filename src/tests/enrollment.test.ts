@@ -74,7 +74,7 @@ describe("testing enrollment", () => {
         const athletes = await athleteRepository.find();
         const athlete = athletes[0];
 
-        const enrollments = await enrollmentRepository.findOneBy({ athlete: athlete, aproved: true, active: true });
+        const enrollments = await enrollmentRepository.findOneBy({ athlete: athlete, approved: true, active: true });
 
         console.log("\n\n");
         console.log(athlete);
@@ -90,7 +90,7 @@ describe("testing enrollment", () => {
         assert.equal(receivedEnrollments, enrollments);
     })
     test("all approved enrolments can be visualized", async () => {
-        const dbEnrollements = await enrollmentRepository.findBy({aproved: true});
+        const dbEnrollements = await enrollmentRepository.findBy({approved: true});
 
         const response = await request(app)
             .get(`${BASE_URL}?approved=true`)

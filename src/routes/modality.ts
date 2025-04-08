@@ -29,7 +29,7 @@ router.get("/:id/athletes-availible", async (req: Request, res: Response) => {
       id,
       enrollments: {
           active: true,
-          aproved: true,
+          approved: true,
       },
     },
     select: {
