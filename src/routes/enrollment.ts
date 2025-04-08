@@ -19,7 +19,7 @@ router.post("/", async (req: Request, res: Response) => {
                 athlete,
                 modality
             }
-        );
+        );        
         await enrollmentRepository.save(enrollment);
         res.status(201).json(enrollment);
     } catch (error) {
@@ -34,9 +34,9 @@ router.get("/", async (req: Request, res: Response) => {
         const filters = req.params;
         const enrollments = await enrollmentRepository.find();
 
-        console.log("\n\n");        
-        console.log(filters);        
-        console.log("\n\n");        
+        // console.log("\n\n");        
+        // console.log(filters);        
+        // console.log("\n\n");        
 
         res.status(200).json(enrollments);
     } catch (error) {

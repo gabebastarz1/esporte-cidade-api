@@ -1,4 +1,4 @@
-import test, { describe, beforeEach, after } from "node:test";
+import test, { describe, beforeEach, after, it } from "node:test";
 import { AppDataSource } from "../database/config";
 import { Athlete } from "src/entities/athlete.entity";
 import { Modality } from "src/entities/modality.entity";
@@ -38,7 +38,7 @@ after(async () => {
 });
 
 describe("testing enrollment", () => {
-    test("enrollment can successfully be made", async () => {
+    it("should create a new enrollment", async () => {
         const athletes = await athleteRepository.find();
         const modalities = await modalityRepository.find();
 
@@ -58,8 +58,7 @@ describe("testing enrollment", () => {
             .expect('Content-Type', /json/)
             .expect(201)
 
-        console.log(response.body);
-
+        // console.log(response.body);
 
         const newEnrollment = response.body;
 
@@ -69,15 +68,15 @@ describe("testing enrollment", () => {
         const [__, countAfter] = await enrollmentRepository.findAndCount();
 
         assert.notStrictEqual(countBefore, countAfter);
-    });    
-    test("approved athlete enrollments can be visualized", async () => {
+    });        
+    it("should return all approved enrollments from an Athlete", {only: true}, async () => {
         const athletes = await athleteRepository.find();
         const athlete = athletes[0];
 
-        const enrollments = await enrollmentRepository.findOneBy({ athlete: athlete, approved: true, active: true });
+        const enrollments = await enrollmentRepository.findBy({ athlete: athlete, approved: true, active: true });
 
         console.log("\n\n");
-        console.log(athlete);
+        console.log(enrollments);
         console.log("\n\n");
 
         const response = await request(app)
@@ -89,7 +88,7 @@ describe("testing enrollment", () => {
 
         assert.equal(receivedEnrollments, enrollments);
     })
-    test("all approved enrolments can be visualized", async () => {
+    it("should return all approved enrolments", async () => {
         const dbEnrollements = await enrollmentRepository.findBy({approved: true});
 
         const response = await request(app)
