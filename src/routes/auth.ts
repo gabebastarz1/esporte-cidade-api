@@ -55,8 +55,6 @@ router.post("/", async (req: Request, res: Response): Promise<any> => {
     });
   }
 
-  console.log(JSON.stringify(result));
-
   return res.status(200).json(result);
 })
 

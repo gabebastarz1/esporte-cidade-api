@@ -13,7 +13,6 @@ router
             const teachers = await teacherRepository.find({
                 relations: ["modality"],
             });
-            console.log(teachers);
             
             res.json(teachers);
         } catch (error) {
