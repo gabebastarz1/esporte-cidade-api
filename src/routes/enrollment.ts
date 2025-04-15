@@ -6,6 +6,7 @@ import { Enrollment } from "../entities/enrollment.entity";
 
 const router = express.Router();
 const enrollmentRepository = AppDataSource.getRepository(Enrollment);
+const athleteRepository = AppDataSource.getRepository(Athlete);
 
 router.post("/", async (req: Request, res: Response) => {
     try {
@@ -19,7 +20,7 @@ router.post("/", async (req: Request, res: Response) => {
                 athlete,
                 modality
             }
-        );        
+        );
         await enrollmentRepository.save(enrollment);
         res.status(201).json(enrollment);
     } catch (error) {
@@ -29,14 +30,17 @@ router.post("/", async (req: Request, res: Response) => {
     }
 });
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/:athleteId", async (req: Request, res: Response) => {
     try {
-        const filters = req.params;
-        const enrollments = await enrollmentRepository.find();
+        const { athleteId } = req.params;
+        const query = req.query;        
 
-        // console.log("\n\n");        
-        // console.log(filters);        
-        // console.log("\n\n");        
+        const athlete = await athleteRepository.findBy({id: Number(athleteId)});
+
+        const approved = query.approved === 'true';
+        const active = query.active === 'true';
+
+        const enrollments = await enrollmentRepository.find({ where: { athlete: athlete, approved, active } });
 
         res.status(200).json(enrollments);
     } catch (error) {

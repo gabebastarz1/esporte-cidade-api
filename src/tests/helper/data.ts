@@ -82,7 +82,7 @@ export const enrollmentsPlaceholder = [
         updated_at: new Date(),
     },
     {
-        active: false,
+        active: true,
         approved: false,
         created_at: new Date(),
         updated_at: new Date(),
