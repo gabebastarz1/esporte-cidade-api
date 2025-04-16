@@ -16,13 +16,15 @@ const athleteRepository = AppDataSource.getRepository(Athlete);
 const modalityRepository = AppDataSource.getRepository(Modality);
 const enrollmentRepository = AppDataSource.getRepository(Enrollment);
 
-beforeEach(async () => {
+before(async () => {
     if (AppDataSource.isInitialized) {
         await AppDataSource.destroy();
     }
 
     await AppDataSource.initialize();
+})
 
+beforeEach(async () => {
     await enrollmentRepository.clear();
     await modalityRepository.clear();
     await athleteRepository.clear();
@@ -32,10 +34,22 @@ beforeEach(async () => {
     await createPlaceholderEnrollments();
 });
 
+after(async () => {
+    await AppDataSource.destroy();
+})
+
 describe("testing enrollment", () => {
     it("should create a new enrollment", async () => {
         const athletes = await athleteRepository.find();
         const modalities = await modalityRepository.find();
+
+        const user = 
+        {
+            cpf: "111.222.333-44",
+            password: "securepassword123"
+        }
+
+        
 
         const athleteId = athletes[0].id;
         const modalityId = modalities[0].id;
@@ -63,8 +77,6 @@ describe("testing enrollment", () => {
         assert.notStrictEqual(countBefore, countAfter);
     });
     it("should return all approved enrollments from an Athlete", { only: true }, async () => {
-
-
         const athletes = await athleteRepository.find();
         const athlete = athletes[0];
 
@@ -77,12 +89,11 @@ describe("testing enrollment", () => {
 
         const receivedEnrollments = response.body;
 
+        assert.notEqual(enrollments.length, 0);
         assert.equal(receivedEnrollments[0].id, enrollments[0].id);
         assert.equal(receivedEnrollments.length, enrollments.length);
     })
     it("should return all reproved enrollments from an Athlete", { only: true }, async () => {
-
-
         const athletes = await athleteRepository.find();
         const athlete = athletes[0];
 
@@ -95,6 +106,7 @@ describe("testing enrollment", () => {
 
         const receivedEnrollments = response.body;
 
+        assert.notEqual(enrollments.length, 0);
         assert.equal(receivedEnrollments.length, enrollments.length);
         assert.equal(receivedEnrollments[0].id, enrollments[0].id);
     })

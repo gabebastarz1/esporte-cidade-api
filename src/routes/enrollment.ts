@@ -3,14 +3,19 @@ import { AppDataSource } from "../database/config";
 import { Athlete } from "../entities/athlete.entity";
 import { Modality } from "../entities/modality.entity";
 import { Enrollment } from "../entities/enrollment.entity";
+import { authentication } from "src/middleware/Authentication";
 
 const router = express.Router();
 const enrollmentRepository = AppDataSource.getRepository(Enrollment);
 const athleteRepository = AppDataSource.getRepository(Athlete);
 
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", authentication, async (req: Request, res: Response) => {
     try {
         const { athleteId, modalityId } = req.body;
+
+        console.log('\n\n');
+        console.log(req.user);
+        console.log('\n\n');
 
         const athlete = await AppDataSource.getRepository(Athlete).findOneBy({ id: athleteId });
         const modality = await AppDataSource.getRepository(Modality).findOneBy({ id: modalityId });
