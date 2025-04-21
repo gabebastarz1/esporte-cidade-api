@@ -1,4 +1,4 @@
-import { athleteRouter, managerRouter, materialRouter, modalityRouter, teacherRouter, authRouter, enrollmentRouter, absencesRouter, registerRouter, authMiddlewareRouter } from "./routes";
+import { athleteRouter, managerRouter, materialRouter, modalityRouter, teacherRouter, authRouter, enrollmentRouter, absencesRouter, registerRouter, authMiddlewareRouter, athleteUserBaseRouter } from "./routes";
 import { existsSync, unlinkSync } from "fs";
 import * as dotenv from "dotenv";
 import express from "express";
@@ -20,7 +20,8 @@ app.use(cors({
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use("/api/material/", materialRouter);
-app.use("/api/userbase/", athleteRouter);
+app.use("/api/athletes/", athleteRouter);
+app.use("/api/userbase/", athleteUserBaseRouter);
 app.use("/api/manager/", managerRouter);
 app.use("/api/teacher/", teacherRouter);
 app.use("/api/modality/", modalityRouter);
@@ -29,5 +30,6 @@ app.use("/api/enrollment/", enrollmentRouter);
 app.use("/api/absences/", absencesRouter);
 app.use("/api/register/", registerRouter);
 app.use("/api/protect/", authMiddlewareRouter);
+app.use('/api/athletes', athleteRouter)
 
 export default app;

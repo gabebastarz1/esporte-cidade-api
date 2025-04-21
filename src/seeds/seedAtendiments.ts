@@ -65,10 +65,16 @@ const atendiments = atendimentRepo.create([
 await atendimentRepo.save(atendiments);
 
   console.log("Seed inserido com sucesso!");
-  await AppDataSource.destroy();
 }
 
-seed().catch((error) => {
-  console.error("Erro ao rodar seed:", error);
-  AppDataSource.destroy();
-});
+async function main() {
+  try {
+    await seed();
+  } catch (error) {
+    console.error("Erro ao rodar seed:", error);
+  } finally {
+    await AppDataSource.destroy();
+  }
+}
+
+main();
