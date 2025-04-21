@@ -7,7 +7,7 @@
     "test": "cross-env NODE_ENV=test node --test --import tsx src/tests/**/*.test.ts",
     "dev": "nodemon --watch \"src/\" -r \"tsconfig-paths/register\" --exec \"ts-node src/server.ts\" -e ts --env-file .env",
     "typeorm": "ts-node -O '{\"module\":\"commonjs\"}' ./node_modules/typeorm/cli.js",
-  "migration:generate": "npm run typeorm -- migration:generate src/migrations/populando-atendimentos -d src/database/config.ts"
+    "migration:generate": "npm run typeorm -- migration:generate src/migrations/populando-atendimentos -d src/database/config.ts"
   },
   "author": "",
   "license": "ISC",
@@ -16,7 +16,7 @@
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
+    "dotenv": "^16.5.0",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.11.3",

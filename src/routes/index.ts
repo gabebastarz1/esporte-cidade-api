@@ -6,3 +6,5 @@ export {default as athleteRouter} from "./userBase";
 export {default as authRouter} from "./auth"
 export {default as enrollmentRouter} from "./enrollment"
 export {default as absencesRouter} from "./absences"
+export {default as registerRouter} from "./register"
+export {default as authMiddlewareRouter} from "./auth-middleware"

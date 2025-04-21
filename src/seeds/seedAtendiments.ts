@@ -18,7 +18,7 @@ let athlete = await athleteRepo.findOneBy({ name: "João" });
 if (!athlete) {
   athlete = athleteRepo.create({
     name: "João",
-    password: "123456",
+    password: "$2b$10$dxK9s52R400Rhgg/2GjbheTGK0BartuE743YTbJiF2VGfEWWe1TpS",
     cpf: "12345678900",
     birthday: "2005-01-01",
     phone: "11999999999",

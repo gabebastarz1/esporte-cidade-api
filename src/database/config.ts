@@ -13,8 +13,8 @@ export const AppDataSource = new DataSource({
   synchronize: false, //sincroniza as alterações com o banco
   logging: false, // loga as queries do banco
   entities: ["src/entities/*{.ts,.js}"],
-  migrations: ["src/migrations/*.ts"], // Remove leading slash
-  migrationsTableName: "migrations" // Explicitly set migrations table name
+  migrations: ["src/migrations/*.ts"], 
+  migrationsTableName: "migrations"
 });
 
 AppDataSource.initialize()
