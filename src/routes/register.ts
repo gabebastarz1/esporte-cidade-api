@@ -10,20 +10,19 @@ const athleteRepository = AppDataSource.getRepository(Athlete);
 router.post("/", async (req: Request, res: Response) => {
     try {
         const {
-            name, cpf, rg, birthday, phone, photo_url, email, password, fatherName, fatherPhone, fatherCpf, fatherEmail,
+            name, cpf, rg, birthday, phone, athletePhotoUrl, email, password, fatherName, fatherPhone, fatherCpf, fatherEmail,
             motherName, motherPhone, motherCpf, motherEmail,
             responsibleName, responsibleEmail, responsibleCpf,
             bloodType, frontIdPhotoUrl, backIdPhotoUrl, foodAllergies
         } = req.body;
 
-        // Verifica se já existe um atleta com o mesmo CPF
         const isThereAnyAthlete = await athleteRepository.findOneBy({ cpf });
         if (isThereAnyAthlete) {
             res.status(400).json({ message: "Este CPF já está cadastrado" });
             return;
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10); // 👈 força de hash 10
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const newAthlete = athleteRepository.create({
             name,
@@ -32,7 +31,7 @@ router.post("/", async (req: Request, res: Response) => {
             rg,
             birthday,
             phone,
-            photo_url,
+            photo_url: athletePhotoUrl,
             email,
             father_name: fatherName,
             father_phone: fatherPhone,
