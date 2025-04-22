@@ -74,7 +74,7 @@ describe("testing enrollment", () => {
 
         assert.notStrictEqual(countBefore, countAfter);
     });
-    it("should return all approved enrollments from an Athlete", { only: true }, async () => {
+    it("should return all approved enrollments from an Athlete", async () => {
         const athletes = await athleteRepository.find();
         const athlete = athletes[0];
 
@@ -91,7 +91,7 @@ describe("testing enrollment", () => {
         assert.equal(receivedEnrollments[0].id, enrollments[0].id);
         assert.equal(receivedEnrollments.length, enrollments.length);
     })
-    it("should return all reproved enrollments from an Athlete", { only: true }, async () => {
+    it("should return all reproved enrollments from an Athlete", async () => {
         const athletes = await athleteRepository.find();
         const athlete = athletes[0];
 
@@ -119,5 +119,30 @@ describe("testing enrollment", () => {
         const receivedEnrollments = response.body;
 
         assert.equal(receivedEnrollments.length, dbEnrollements.length);
-    });
+    })
+    it("should return all enrolments", {only: true}, async () => {
+        const dbEnrollements = await enrollmentRepository.find();
+
+        const response = await request(app)
+            .get(`${BASE_URL}`)
+            .expect(200)
+            .expect('Content-Type', /json/);
+
+        const receivedEnrollments = response.body;
+
+        assert.equal(receivedEnrollments.length, dbEnrollements.length);
+    })
+    it("should delete an enrollment", async () => {
+        const enrollments = await enrollmentRepository.find();
+        const enrollment = enrollments[0];
+
+        await request(app)
+            .delete(`${BASE_URL}/${enrollment.id}`)
+            .expect(200)
+            .expect('Content-Type', /json/);
+
+        const enrollmentsAfter = await enrollmentRepository.find();
+
+        assert.notEqual(enrollments.length, enrollmentsAfter.length);
+    })    
 })

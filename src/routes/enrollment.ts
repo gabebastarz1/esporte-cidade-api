@@ -66,7 +66,17 @@ router.get("/", async (req: Request, res: Response) => {
         const approved = query.approved === 'true';
         const active = query.active === 'true';
 
-        const enrollments = await enrollmentRepository.find({ where: { approved, active } });
+        const where: any = {};
+
+        if (query.approved !== null && query.approved !== undefined) {
+            where.approved = approved;
+        }
+
+        if (query.active !== null && query.active !== undefined) {
+            where.active = active;
+        }
+
+        const enrollments = await enrollmentRepository.find({ where });
 
         res.status(200).json(enrollments);
     } catch (error) {
