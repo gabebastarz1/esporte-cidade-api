@@ -11,7 +11,8 @@
     
     "dev": "nodemon --watch \"src/\" -r \"tsconfig-paths/register\" --exec \"ts-node src/server.ts\" -e ts --env-file .env",
     "migration": "npx ts-node -O {\\\"module\\\":\\\"commonjs\\\"} ./node_modules/typeorm/cli.js migration:run -d src/database/config.ts",
-    "seed": "npx ts-node src/seeds/seedAtendiments.ts"
+    "seed": "npx ts-node src/seeds/seedAtendiments.ts",
+    "seedTest": "cross-env NODE_ENV=test npx ts-node src/seeds/seedAtendiments.ts"
   },
   "author": "",
   "license": "ISC",

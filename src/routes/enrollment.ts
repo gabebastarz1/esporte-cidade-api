@@ -18,10 +18,6 @@ router.post("/", authentication, async (req: AuthRequest, res: Response) => {
     try {
         const { modalityId } = req.body;
 
-        console.log('\n\n');
-        console.log(req.user);
-        console.log('\n\n');
-
         const athlete = await AppDataSource.getRepository(Athlete).findOneBy({ id: req.user.id });
         const modality = await AppDataSource.getRepository(Modality).findOneBy({ id: modalityId });
 
@@ -41,7 +37,7 @@ router.post("/", authentication, async (req: AuthRequest, res: Response) => {
     }
 });
 
-router.get("/:athleteId", async (req: Request, res: Response) => {
+router.get("/:athleteId", authentication, async (req: Request, res: Response) => {
     try {
         const { athleteId } = req.params;
         const query = req.query;
@@ -59,7 +55,7 @@ router.get("/:athleteId", async (req: Request, res: Response) => {
     }
 });
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", authentication, async (req: Request, res: Response) => {
     try {
         const query = req.query;
 
@@ -84,19 +80,19 @@ router.get("/", async (req: Request, res: Response) => {
     }
 });
 
-router.delete("/:id", async (req: Request, res: Response) => {
+router.delete("/:id", authentication, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
         await enrollmentRepository.delete(id);
 
-        res.status(200);
+        res.status(200).json({message: "The enrollment was successfully deleted"});
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-router.put("/:id", async (req: Request, res: Response) => {
+router.put("/:id", authentication, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 

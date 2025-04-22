@@ -6,7 +6,7 @@ import { TeacherAuthService } from '../services/auth-teacher.service';
 export class AuthController {
   static async login(req: Request, res: Response): Promise<void> {
     try {
-      const { type, ...credentials } = req.body;
+      const { type, credentials } = req.body;
 
       let result;
       switch (type) {
