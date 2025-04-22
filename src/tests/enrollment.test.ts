@@ -1,9 +1,8 @@
-import test, { describe, beforeEach, after } from "node:test";
-import { AppDataSource } from "../database/config";
+import test, { describe, beforeEach, after, it, before } from "node:test";
+import { AppDataSource } from "src/database/config";
 import { Athlete } from "src/entities/athlete.entity";
 import { Modality } from "src/entities/modality.entity";
 import { Enrollment } from "src/entities/enrollment.entity";
-import { enrollmentsPlaceholder } from "./helper/data";
 import { createPlaceholderAthletes } from "./helper/createPlaceholderAthletes";
 import { createPlaceholderModalities } from "./helper/createPlaceholderModalities";
 import { createPlaceholderEnrollments } from "./helper/createPlaceholderEnrollments";
@@ -11,17 +10,21 @@ import assert from "node:assert"
 import request from "supertest";
 import app from "src/app";
 
-const BASE_URL = "/api/enrollment/";
+const BASE_URL = "/api/enrollment";
 
 const athleteRepository = AppDataSource.getRepository(Athlete);
 const modalityRepository = AppDataSource.getRepository(Modality);
 const enrollmentRepository = AppDataSource.getRepository(Enrollment);
 
-beforeEach(async () => {
-    if (!AppDataSource.isInitialized) {
-        await AppDataSource.initialize();
+before(async () => {
+    if (AppDataSource.isInitialized) {
+        await AppDataSource.destroy();
     }
 
+    await AppDataSource.initialize();
+})
+
+beforeEach(async () => {
     await enrollmentRepository.clear();
     await modalityRepository.clear();
     await athleteRepository.clear();
@@ -32,15 +35,19 @@ beforeEach(async () => {
 });
 
 after(async () => {
-    if (AppDataSource.isInitialized) {
-        await AppDataSource.destroy();
-    }
-});
+    await AppDataSource.destroy();
+})
 
 describe("testing enrollment", () => {
-    test("enrollment can successfully be made", async () => {
+    it("should create a new enrollment", async () => {
         const athletes = await athleteRepository.find();
         const modalities = await modalityRepository.find();
+
+        const user = 
+        {
+            cpf: "111.222.333-44",
+            password: "securepassword123"
+        }
 
         const athleteId = athletes[0].id;
         const modalityId = modalities[0].id;
@@ -55,11 +62,8 @@ describe("testing enrollment", () => {
                     modalityId
                 }
             )
-            .expect('Content-Type', /json/)
             .expect(201)
-
-        console.log(response.body);
-
+            .expect('Content-Type', /json/);
 
         const newEnrollment = response.body;
 
@@ -69,36 +73,76 @@ describe("testing enrollment", () => {
         const [__, countAfter] = await enrollmentRepository.findAndCount();
 
         assert.notStrictEqual(countBefore, countAfter);
-    });    
-    test("approved athlete enrollments can be visualized", async () => {
+    });
+    it("should return all approved enrollments from an Athlete", async () => {
         const athletes = await athleteRepository.find();
         const athlete = athletes[0];
 
-        const enrollments = await enrollmentRepository.findOneBy({ athlete: athlete, aproved: true, active: true });
-
-        console.log("\n\n");
-        console.log(athlete);
-        console.log("\n\n");
+        const enrollments = await enrollmentRepository.find({ where: { athlete: athlete, approved: true, active: true } });
 
         const response = await request(app)
             .get(`${BASE_URL}/${athlete.id}?approved=true&active=true`)
-            .expect('Content-Type', /json/)
-            .expect(200);
+            .expect(200)
+            .expect('Content-Type', /json/);
 
         const receivedEnrollments = response.body;
 
-        assert.equal(receivedEnrollments, enrollments);
+        assert.notEqual(enrollments.length, 0);
+        assert.equal(receivedEnrollments[0].id, enrollments[0].id);
+        assert.equal(receivedEnrollments.length, enrollments.length);
     })
-    test("all approved enrolments can be visualized", async () => {
-        const dbEnrollements = await enrollmentRepository.findBy({aproved: true});
+    it("should return all reproved enrollments from an Athlete", async () => {
+        const athletes = await athleteRepository.find();
+        const athlete = athletes[0];
+
+        const enrollments = await enrollmentRepository.find({ where: { athlete: athlete, approved: false, active: true } });
+
+        const response = await request(app)
+            .get(`${BASE_URL}/${athlete.id}?approved=false&active=true`)
+            .expect(200)
+            .expect('Content-Type', /json/);
+
+        const receivedEnrollments = response.body;
+
+        assert.notEqual(enrollments.length, 0);
+        assert.equal(receivedEnrollments.length, enrollments.length);
+        assert.equal(receivedEnrollments[0].id, enrollments[0].id);
+    })
+    it("should return all approved enrolments", async () => {
+        const dbEnrollements = await enrollmentRepository.findBy({ approved: true });
 
         const response = await request(app)
             .get(`${BASE_URL}?approved=true`)
-            .expect('Content-Type', /json/)
-            .expect(200);
+            .expect(200)
+            .expect('Content-Type', /json/);
 
         const receivedEnrollments = response.body;
 
         assert.equal(receivedEnrollments.length, dbEnrollements.length);
-    });
+    })
+    it("should return all enrolments", {only: true}, async () => {
+        const dbEnrollements = await enrollmentRepository.find();
+
+        const response = await request(app)
+            .get(`${BASE_URL}`)
+            .expect(200)
+            .expect('Content-Type', /json/);
+
+        const receivedEnrollments = response.body;
+
+        assert.equal(receivedEnrollments.length, dbEnrollements.length);
+    })
+    it("should delete an enrollment", async () => {
+        const enrollments = await enrollmentRepository.find();
+        const enrollment = enrollments[0];
+
+        await request(app)
+            .delete(`${BASE_URL}/${enrollment.id}`)
+            .expect(200)
+            .expect('Content-Type', /json/);
+
+        const enrollmentsAfter = await enrollmentRepository.find();
+
+        assert.notEqual(enrollments.length, enrollmentsAfter.length);
+    })    
 })

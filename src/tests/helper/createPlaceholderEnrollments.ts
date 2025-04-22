@@ -12,8 +12,8 @@ export const createPlaceholderEnrollments = async () => {
     const modalities = await modalityRepository.find();
     const athletes = await athleteRepository.find();
 
-    for (let i = 0, j = 0; i < 2; i++, j++) {
-        const newEnrollment = enrollmentRepository.create(enrollmentsPlaceholder[j]);
+    for (let i = 0; i < 2; i++) {
+        const newEnrollment = enrollmentRepository.create(enrollmentsPlaceholder[i]);
 
         newEnrollment.athlete = athletes[0];
         newEnrollment.modality = modalities[i];

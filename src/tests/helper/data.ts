@@ -77,13 +77,13 @@ export const athletesPlaceholder = [
 export const enrollmentsPlaceholder = [
     {
         active: true,
-        aproved: true,
+        approved: true,
         created_at: new Date(),
         updated_at: new Date(),
     },
     {
-        active: false,
-        aproved: false,
+        active: true,
+        approved: false,
         created_at: new Date(),
         updated_at: new Date(),
     }

@@ -18,7 +18,7 @@ export class Enrollment {
   active: boolean;
 
   @Column({ type: "boolean", default: false })
-  aproved: boolean;
+  approved: boolean;
 
   @CreateDateColumn({ type: "date", default: () => "CURRENT_TIMESTAMP" })
   created_at: Date;
