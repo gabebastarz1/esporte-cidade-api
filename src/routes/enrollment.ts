@@ -12,8 +12,7 @@ const athleteRepository = AppDataSource.getRepository(Athlete);
 
 interface AuthRequest extends Request {
     user?: string | JwtPayload;
-  }
-  
+}
 
 router.post("/", authentication, async (req: AuthRequest, res: Response) => {
     try {
@@ -31,7 +30,7 @@ router.post("/", authentication, async (req: AuthRequest, res: Response) => {
                 athlete,
                 modality
             }
-        );        
+        );
         await enrollmentRepository.save(enrollment);
 
         res.status(201).json(enrollment);
@@ -45,9 +44,9 @@ router.post("/", authentication, async (req: AuthRequest, res: Response) => {
 router.get("/:athleteId", async (req: Request, res: Response) => {
     try {
         const { athleteId } = req.params;
-        const query = req.query;        
+        const query = req.query;
 
-        const athlete = await athleteRepository.findBy({id: Number(athleteId)});
+        const athlete = await athleteRepository.findOne({ where: { id: Number(athleteId) } });
 
         const approved = query.approved === 'true';
         const active = query.active === 'true';
@@ -59,5 +58,47 @@ router.get("/:athleteId", async (req: Request, res: Response) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+router.get("/", async (req: Request, res: Response) => {
+    try {
+        const query = req.query;
+
+        const approved = query.approved === 'true';
+        const active = query.active === 'true';
+
+        const enrollments = await enrollmentRepository.find({ where: { approved, active } });
+
+        res.status(200).json(enrollments);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.delete("/:id", async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        await enrollmentRepository.delete(id);
+
+        res.status(200);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.put("/:id", async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        const enrollment = await enrollmentRepository.findOne({ where: { id: Number(id) } });
+
+        const toEnrollment = await enrollmentRepository.save({ id, ...enrollment, ...req.body });
+
+        res.status(200).json(toEnrollment);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 export default router;
