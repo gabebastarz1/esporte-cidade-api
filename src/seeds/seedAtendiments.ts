@@ -84,13 +84,15 @@ async function seed() {
   }
 
   // 4. Criar atendimentos variados
-  const atendiments = atendimentRepo.create([
-    {
-      athlete,
-      modality: futebol,
-      present: true,
-    },
-  ]);
+ 
+// 4. Criar atendimentos variados
+const atendiments = atendimentRepo.create([
+  { athlete, modality: modalities[0], present: false }, // Futebol
+  { athlete, modality: modalities[0], present: true },  // Futebol
+  { athlete, modality: modalities[1], present: false }, // Basquete
+  { athlete, modality: modalities[2], present: true },  // Capoeira 
+  { athlete, modality: modalities[1], present: true },  // Basquete
+]);
   await atendimentRepo.save(atendiments);
 
   console.log("Seed inserido com sucesso!");
