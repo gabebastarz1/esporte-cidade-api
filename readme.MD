@@ -11,3 +11,6 @@ npx ts-node src/seeds/seedAtendiments.ts
  a seed gera um athleta de teste para logar 
  cpf: 12345678900
  senha: 123456789
+
+ Professor:
+ 
