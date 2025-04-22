@@ -49,8 +49,6 @@ describe("testing enrollment", () => {
             password: "securepassword123"
         }
 
-        
-
         const athleteId = athletes[0].id;
         const modalityId = modalities[0].id;
 
