@@ -10,3 +10,5 @@ cpf: 12345678900
 senha: 123456789
 
 Professor:
+email: carlos@teste.com
+senha: 123456789
