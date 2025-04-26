@@ -1,16 +1,37 @@
 import { AppDataSource } from "../database/config";
 import { Athlete } from "../entities/athlete.entity";
 import { Modality } from "../entities/modality.entity";
-import { Atendiment } from "../entities/atendiment.entity";
+import { Enrollment } from "../entities/enrollment.entity";
 import { Teacher } from "../entities/teacher.entity";
+import { Atendiment } from "../entities/atendiment.entity";
 import { Roles } from "../enums/roles.enum";
+
+function getRandomDaysOfWeek() {
+  const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
+  const selectedDays = days.filter(() => Math.random() > 0.5);
+  return selectedDays.length > 0 ? selectedDays.join(",") : "Segunda"; // Garante pelo menos um dia
+}
+
+function getRandomTime() {
+  const hours = Math.floor(Math.random() * 10) + 8; // Horário aleatório entre 08:00 e 17:00
+  const minutes = Math.floor(Math.random() * 4) * 15; // Multiplicando por 15 para gerar 00, 15, 30 ou 45 minutos
+  const time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  return time;
+}
+
+function getRandomEndTime(startTime: string) {
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+  const endHour = (startHour + 2) % 24; // Garantindo que o horário de fim não ultrapasse 24:00
+  const endTime = `${String(endHour).padStart(2, "0")}:${String(startMinute).padStart(2, "0")}`;
+  return endTime;
+}
 
 async function seed() {
   await AppDataSource.initialize();
 
-  // 1. Repositórios
   const athleteRepo = AppDataSource.getRepository(Athlete);
   const modalityRepo = AppDataSource.getRepository(Modality);
+  const enrollmentRepo = AppDataSource.getRepository(Enrollment);
   const atendimentRepo = AppDataSource.getRepository(Atendiment);
   const teacherRepo = AppDataSource.getRepository(Teacher);
 
@@ -54,6 +75,9 @@ async function seed() {
     await teacherRepo.save(teacher);
   }
 
+  await modalityRepo.delete({});
+  await enrollmentRepo.delete({});
+
   // 3. Criar modalidades se não existirem
   const modalityNames = ["Futebol", "Basquete", "Capoeira"];
   const modalities: Modality[] = [];
@@ -62,13 +86,16 @@ async function seed() {
     let modality = await modalityRepo.findOneBy({ name });
 
     if (!modality) {
+      const startTime = getRandomTime();  // Gerando horário de início aleatório
+      const endTime = getRandomEndTime(startTime);  // Gerando horário de término aleatório baseado no início
+
       modality = modalityRepo.create({
         name,
         description: `${name} para iniciantes`,
-        days_of_week: ["Segunda", "Quarta"],
-        start_time: "08:00",
-        end_time: "10:00",
-        class_locations: ["Quadra 1"],
+        days_of_week: getRandomDaysOfWeek(), // Randomizando os dias da semana
+        start_time: startTime,
+        end_time: endTime,
+        class_locations: "Quadra 1",
       });
       await modalityRepo.save(modality);
     }
@@ -84,15 +111,13 @@ async function seed() {
   }
 
   // 4. Criar atendimentos variados
- 
-// 4. Criar atendimentos variados
-const atendiments = atendimentRepo.create([
-  { athlete, modality: modalities[0], present: false }, // Futebol
-  { athlete, modality: modalities[0], present: true },  // Futebol
-  { athlete, modality: modalities[1], present: false }, // Basquete
-  { athlete, modality: modalities[2], present: true },  // Capoeira 
-  { athlete, modality: modalities[1], present: true },  // Basquete
-]);
+  const atendiments = atendimentRepo.create([
+    { athlete, modality: modalities[0], present: false },
+    { athlete, modality: modalities[0], present: true },
+    { athlete, modality: modalities[1], present: false },
+    { athlete, modality: modalities[2], present: true },
+    { athlete, modality: modalities[1], present: true },
+  ]);
   await atendimentRepo.save(atendiments);
 
   console.log("Seed inserido com sucesso!");

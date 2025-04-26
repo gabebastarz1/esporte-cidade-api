@@ -16,23 +16,33 @@ interface AuthRequest extends Request {
 
 router.post("/", authentication, async (req: AuthRequest, res: Response) => {
     try {
+        console.log('ENROLLMENT POST - REQ.USER:', req.user);
+        console.log('ENROLLMENT POST - BODY:', req.body);
         const { modalityId } = req.body;
 
         const athlete = await AppDataSource.getRepository(Athlete).findOneBy({ id: req.user.id });
         const modality = await AppDataSource.getRepository(Modality).findOneBy({ id: modalityId });
 
-        const enrollment = enrollmentRepository.create(
-            {
-                athlete,
-                modality
-            }
-        );
+        console.log('ENROLLMENT POST - ATHLETE:', athlete);
+        console.log('ENROLLMENT POST - MODALITY:', modality);
+
+        if (!athlete || !modality) {
+            console.log('ENROLLMENT POST - athlete ou modality não encontrada');
+            return res.status(400).json({ message: "Athlete ou modalidade não encontrada." });
+        }
+
+        const enrollment = enrollmentRepository.create({
+            athlete,
+            modality,
+            active: true,
+            approved: false,
+        });
         await enrollmentRepository.save(enrollment);
 
+        console.log('ENROLLMENT POST - ENROLLMENT SALVO:', enrollment);
         res.status(201).json(enrollment);
     } catch (error) {
-        console.error("error message", error.message);
-
+        console.error("error message", error);
         res.status(500).json({ message: "error message", error: error.message });
     }
 });
@@ -43,13 +53,30 @@ router.get("/:athleteId", authentication, async (req: Request, res: Response) =>
         const query = req.query;
 
         const athlete = await athleteRepository.findOne({ where: { id: Number(athleteId) } });
+        if (!athlete) {
+            return res.status(404).json({ error: "Athlete not found" });
+        }
 
-        const approved = query.approved === 'true';
-        const active = query.active === 'true';
+        const where: any = { athlete: { id: Number(athleteId) } };
 
-        const enrollments = await enrollmentRepository.find({ where: { athlete: athlete, approved, active } });
+        // Só filtra se vier na query
+        if (query.approved !== undefined) {
+            where.approved = query.approved === 'true';
+        }
+        if (query.active !== undefined) {
+            where.active = query.active === 'true';
+        }
 
-        res.status(200).json(enrollments);
+        console.log('Consulta WHERE para enrollment:', JSON.stringify(where, null, 2));
+        try {
+          const enrollments = await enrollmentRepository.find({ where, relations: ["modality"] });
+          console.log('Resultado ENROLLMENTS:', JSON.stringify(enrollments, null, 2));
+          res.status(200).json(enrollments);
+        } catch (findErr) {
+          console.error('Erro ao buscar enrollments:', findErr);
+          res.status(500).json({ error: findErr.message, stack: findErr.stack });
+          return;
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

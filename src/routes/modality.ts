@@ -12,7 +12,13 @@ router.get("/", async (req: Request, res: Response) => {
     const modalities = await modalityRepository.find({
       relations: ["teachers"],
     });
-    res.status(200).json(modalities);
+    // Ajuste: converter dias e locais de string para array antes de enviar
+    const modalitiesWithArrays = modalities.map((mod) => ({
+      ...mod,
+      days_of_week: mod.days_of_week ? mod.days_of_week.split(',').map((s: string) => s.trim()) : [],
+      class_locations: mod.class_locations ? mod.class_locations.split(',').map((s: string) => s.trim()) : [],
+    }));
+    res.status(200).json(modalitiesWithArrays);
   } catch (error) {
     console.error("Erro ao buscar modalidades:", error.message);
     res
