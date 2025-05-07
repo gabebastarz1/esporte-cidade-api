@@ -9,14 +9,19 @@ import { createPlaceholderEnrollments } from "./helper/createPlaceholderEnrollme
 import assert from "node:assert"
 import request from "supertest";
 import app from "src/app";
+import { createPlaceholderTeachers } from "./helper/createPlaceholderTeacher";
+import { Teacher } from "src/entities/teacher.entity";
+import { teachersPlaceholder } from "./helper/data";
 
 const BASE_URL = "/api/enrollment";
 
 const athleteRepository = AppDataSource.getRepository(Athlete);
 const modalityRepository = AppDataSource.getRepository(Modality);
 const enrollmentRepository = AppDataSource.getRepository(Enrollment);
+const teacherRepository = AppDataSource.getRepository(Teacher);
 
 let token: string;
+let teacherToken: string;
 
 before(async () => {
     if (AppDataSource.isInitialized) {
@@ -32,10 +37,12 @@ beforeEach(async () => {
     await enrollmentRepository.clear();
     await modalityRepository.clear();
     await athleteRepository.clear();
+    await teacherRepository.clear();
 
     await createPlaceholderAthletes();
     await createPlaceholderModalities();
     await createPlaceholderEnrollments();
+    await createPlaceholderTeachers();
 
     const user = {
         credentials: {
@@ -45,6 +52,16 @@ beforeEach(async () => {
         type: "athlete"
     };
 
+    const teacher = {
+        credentials: {
+            email: "john.smith@example.com",
+            password: "123456"
+        },
+        type: "teacher"
+    };
+
+    // Athlete Login
+
     const responseLogin = await request(app)
         .post("/api/auth/login")
         .send(user)
@@ -53,6 +70,17 @@ beforeEach(async () => {
 
     token = responseLogin.body.accessToken;
     assert(token, "Access token not received");
+
+    // Teacher Login
+    
+    const teacherLogin = await request(app)
+        .post("/api/auth/login")
+        .send(teacher)
+        .expect(200)
+        .expect("Content-Type", /json/);
+
+    teacherToken = teacherLogin.body.accessToken;
+    assert(teacherToken, "Teacher access token not received");
 });
 
 after(async () => {
@@ -97,7 +125,7 @@ describe("testing enrollment", () => {
         const enrollments = await enrollmentRepository.find({ where: { athlete: athlete, approved: true, active: true } });
 
         const response = await request(app)
-            .get(`${BASE_URL}/${athlete.id}?approved=true&active=true`)
+            .get(`${BASE_URL}?approved=true&active=true`)
             .set("Authorization", `Bearer ${token}`)
             .expect(200)
             .expect('Content-Type', /json/);
@@ -115,7 +143,7 @@ describe("testing enrollment", () => {
         const enrollments = await enrollmentRepository.find({ where: { athlete: athlete, approved: false, active: true } });
 
         const response = await request(app)
-            .get(`${BASE_URL}/${athlete.id}?approved=false&active=true`)
+            .get(`${BASE_URL}?approved=false&active=true`)
             .set("Authorization", `Bearer ${token}`)
             .expect(200)
             .expect('Content-Type', /json/);
@@ -139,7 +167,7 @@ describe("testing enrollment", () => {
 
         assert.equal(receivedEnrollments.length, dbEnrollements.length);
     })
-    it("should return all enrolments", async () => {
+    it("should return all enrollments from a student", async () => {
         const dbEnrollements = await enrollmentRepository.find();
 
         const response = await request(app)
@@ -152,20 +180,38 @@ describe("testing enrollment", () => {
 
         assert.equal(receivedEnrollments.length, dbEnrollements.length);
     })
-    it("should inactivate an enrollment", { only: true }, async () => {
-        const enrollments = await enrollmentRepository.find({ where: { active: true } });
+    it("should return all enrollments from a teacher's modality", {only: true}, async () => {
+        const dbEnrollements = await enrollmentRepository.find({
+            where: {
+                modality: { 
+                    id: teachersPlaceholder[0].modality.id
+                }
+            }
+        });
+
+        const response = await request(app)
+            .get(`${BASE_URL}`)
+            .set("Authorization", `Bearer ${teacherToken}`)
+            .expect(200)
+            .expect('Content-Type', /json/);
+
+        const receivedEnrollments = response.body;
+
+        assert.equal(receivedEnrollments.length, dbEnrollements.length);
+    })    
+    it("should approve an enrollment as a teacher", { only: true }, async () => {
+        const enrollments = await enrollmentRepository.find({ where: { approved: false } });
         const enrollment = enrollments[0];
 
         const response = await request(app)
-            .put(`${BASE_URL}/${enrollment.id}`)
-            .set("Authorization", `Bearer ${token}`)
-            .send({ active: false })
+            .put(`${BASE_URL}/approve/${enrollment.id}`)
+            .set("Authorization", `Bearer ${teacherToken}`)
             .expect(200)
             .expect('Content-Type', /json/);
 
         const updatedEnrollment = response.body;
 
-        assert.equal(updatedEnrollment.active, false);
+        assert.equal(updatedEnrollment.approved, true);
         assert.notEqual(updatedEnrollment, enrollment);
     })
     it("should delete an enrollment", async () => {
