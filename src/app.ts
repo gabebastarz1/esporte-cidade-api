@@ -30,6 +30,5 @@ app.use("/api/enrollment/", enrollmentRouter);
 app.use("/api/absences/", absencesRouter);
 app.use("/api/register/", registerRouter);
 app.use("/api/protect/", authMiddlewareRouter);
-app.use('/api/athletes', athleteRouter)
 
 export default app;
