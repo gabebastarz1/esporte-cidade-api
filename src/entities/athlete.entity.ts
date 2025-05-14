@@ -53,9 +53,9 @@ export class Athlete extends UserBase {
   @Column("text", { nullable: true, default: "Nenhuma alergia informada" })
   allergy: string;
 
-  @OneToMany(() => Atendiment, (a) => a.athlete)
+  @OneToMany(() => Atendiment, (a) => a.athlete, { nullable: true })
   atendiments: Atendiment[];
 
-  @OneToMany(() => Enrollment, (e) => e.athlete)
+  @OneToMany(() => Enrollment, (e) => e.athlete, { nullable: true })
   enrollments: Enrollment[];
 }

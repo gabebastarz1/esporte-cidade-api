@@ -1,0 +1,341 @@
+import "reflect-metadata";
+import { createConnection, LessThanOrEqual } from "typeorm";
+import { faker } from "@faker-js/faker";
+import { Athlete } from "../entities/athlete.entity";
+import { AppDataSource } from "../database/config";
+import { Roles } from "../enums/roles.enum";
+import bcrypt from "bcrypt";
+import { Modality } from "../entities/modality.entity";
+import { Teacher } from "../entities/teacher.entity";
+import { Manager } from "../entities/manager.entity";
+import { Enrollment } from "../entities/enrollment.entity";
+import { Atendiment } from "../entities/atendiment.entity";
+import { addDays, formatISO } from "date-fns";
+
+export const seedOfAllEntities = async () => {
+  const athleteRepository = AppDataSource.getRepository(Athlete);
+
+  // Gerar 10 atletas
+  for (let i = 0; i < 40; i++) {
+    const athlete = new Athlete();
+
+    // Dados básicos (herdados de UserBase)
+    athlete.name = faker.person.fullName();
+    athlete.email = faker.internet.email({
+      firstName: athlete.name.split(" ")[0],
+    });
+    athlete.password = await bcrypt.hash(`senha${i}`, 1);
+    athlete.phone = faker.phone.number({ style: "national" });
+    athlete.cpf = faker.string.numeric(11);
+    athlete.birthday = faker.date
+      .birthdate({ min: 25, max: 60, mode: "age" })
+      .toISOString()
+      .split("T")[0];
+    athlete.role = Roles.ATHLETES;
+
+    // Dados do pai
+    athlete.father_name = faker.person.fullName({ sex: "male" });
+    athlete.father_phone = faker.phone.number({ style: "national" });
+    athlete.father_cpf = faker.string.numeric(11); // CPF fictício
+    athlete.father_email = faker.internet.email({
+      firstName: athlete.father_name.split(" ")[0],
+    });
+
+    // Dados da mãe
+    athlete.mother_name = faker.person.fullName({ sex: "female" });
+    athlete.mother_phone = faker.phone.number({ style: "national" });
+    athlete.mother_cpf = faker.string.numeric(11);
+    athlete.mother_email = faker.internet.email({
+      firstName: athlete.mother_name.split(" ")[0],
+    });
+
+    // Responsável (pode ser pai, mãe ou outro)
+    athlete.responsible_person_name = faker.helpers.arrayElement([
+      athlete.father_name,
+      athlete.mother_name,
+      faker.person.fullName(),
+    ]);
+    athlete.responsible_person_email = faker.internet.email({
+      firstName: athlete.responsible_person_name.split(" ")[0],
+    });
+    athlete.responsible_person_cpf = faker.string.numeric(11);
+
+    // Saúde
+    athlete.blood_type = faker.helpers.arrayElement([
+      "A+",
+      "B+",
+      "AB+",
+      "O+",
+      "A-",
+      "B-",
+      "AB-",
+      "O-",
+    ]);
+    athlete.allergy = faker.helpers.arrayElement([
+      "Nenhuma alergia informada",
+      "Amendoim",
+      "Glúten",
+      "Lactose",
+      "Penicilina",
+    ]);
+
+    // Fotos do CPF (URLs fictícias)
+    athlete.photo_url_cpf_front = faker.image.urlLoremFlickr({
+      category: "document",
+    });
+    athlete.photo_url_cpf_back = faker.image.urlLoremFlickr({
+      category: "document",
+    });
+
+    await athleteRepository.save(athlete);
+    console.log(`Atleta criado: ${athlete.name} (ID: ${athlete.id})`);
+  }
+
+  console.log("✅ Seed de atletas concluído!");
+
+  const modalityRepository = AppDataSource.getRepository(Modality);
+
+  // Dados fictícios para modalidades esportivas
+  const sports = [
+    { name: "Futebol", description: "Treinos de futebol infantil e juvenil" },
+    { name: "Vôlei", description: "Aulas de vôlei para todas as idades" },
+    { name: "Basquete", description: "Desenvolvimento de fundamentos" },
+    { name: "Natação", description: "Aulas para iniciantes e avançados" },
+    { name: "Judô", description: "Arte marcial para crianças" },
+  ];
+
+  for (const sport of sports) {
+    const modality = new Modality();
+
+    modality.name = sport.name;
+    modality.description = sport.description;
+
+    // Dias da semana aleatórios (ex: "seg,qua,sex")
+    modality.days_of_week = faker.helpers
+      .arrayElements(["seg", "ter", "qua", "qui", "sex", "sab", "dom"], {
+        min: 2,
+        max: 4,
+      })
+      .join(",");
+
+    // Horários realistas
+    const today = new Date();
+
+    // Horário de início entre 8h e 16h
+    const startTime = new Date(today);
+    startTime.setHours(faker.number.int({ min: 8, max: 16 }));
+    startTime.setMinutes(faker.helpers.arrayElement([0, 15, 30, 45]));
+    modality.start_time = startTime.toTimeString().substring(0, 5); // Formato "HH:mm"
+
+    // Horário de término (1h a 2h depois do início)
+    const endTime = new Date(startTime);
+    endTime.setHours(
+      startTime.getHours() + faker.number.int({ min: 1, max: 2 })
+    );
+    modality.end_time = endTime.toTimeString().substring(0, 5);
+    // Locais fictícios (ex: "Quadra A,Ginásio B")
+    modality.class_locations = faker.helpers
+      .arrayElements(
+        [
+          "Quadra Principal",
+          "Ginásio Central",
+          "Campo de Futebol",
+          "Piscina Olímpica",
+          "Sala de Artes Marciais",
+        ],
+        { min: 1, max: 2 }
+      )
+      .join(",");
+
+    await modalityRepository.save(modality);
+    console.log(`Modalidade criada: ${modality.name}`);
+  }
+
+  const teacherRepository = AppDataSource.getRepository(Teacher);
+
+  // Busca modalidades existentes
+  const modalities = await modalityRepository.find();
+  if (modalities.length === 0) {
+    throw new Error(
+      "Nenhuma modalidade encontrada. Rode seedModalities() primeiro!"
+    );
+  }
+
+  // Gera 5 professores
+  for (let i = 0; i < 5; i++) {
+    const teacher = new Teacher();
+
+    // Dados de UserBase
+    teacher.name = faker.person.fullName();
+    teacher.email = faker.internet.email({
+      firstName: teacher.name.split(" ")[0],
+    });
+    teacher.cpf = faker.string.numeric(11); // Gera CPF sem formatação
+    teacher.rg = faker.string.numeric(9);
+    teacher.birthday = faker.date
+      .birthdate({ min: 25, max: 60, mode: "age" })
+      .toISOString()
+      .split("T")[0];
+    teacher.phone = faker.phone.number({ style: "national" }); // Sem formatação
+    teacher.photo_url = faker.image.avatar();
+    teacher.role = Roles.TEACHER; // Supondo que existe um enum Roles.TEACHER
+
+    // Criptografa senha (padrão: "senha123")
+    teacher.password = await bcrypt.hash(`senha${i}`, 10);
+
+    // Campos específicos de Teacher
+    teacher.about = faker.lorem.paragraph();
+    teacher.modality = modalities[i];
+
+    await teacherRepository.save(teacher);
+    console.log(
+      `Professor criado: ${teacher.name} | Modalidade: ${teacher.modality.name}`
+    );
+  }
+
+  const managerRepository = AppDataSource.getRepository(Manager);
+
+  // Gera 3 gestores (ou a quantidade que desejar)
+  for (let i = 0; i < 3; i++) {
+    const manager = new Manager();
+
+    // Dados de UserBase
+    manager.name = faker.person.fullName();
+    manager.email = faker.internet.email({
+      firstName: manager.name.split(" ")[0],
+    });
+    manager.cpf = faker.string.numeric(11); // CPF sem formatação
+    manager.rg = faker.string.numeric(9);
+    manager.birthday = faker.date
+      .birthdate({ min: 30, max: 65, mode: "age" })
+      .toISOString()
+      .split("T")[0];
+    manager.phone = faker.phone.number({ style: "national" }); // Sem formatação
+    manager.photo_url = faker.image.avatar();
+    manager.role = Roles.MANAGER; // Definindo a role como MANAGER
+
+    // Criptografa senha (padrão: "senha123")
+    manager.password = await bcrypt.hash("senha123", 10);
+
+    await managerRepository.save(manager);
+    console.log(`Gestor criado: ${manager.name} | Email: ${manager.email}`);
+  }
+
+  const enrollmentRepository = AppDataSource.getRepository(Enrollment);
+
+  // Busca todos os atletas e modalidades
+  const athletes = await athleteRepository.find();
+
+  if (athletes.length === 0 || modalities.length === 0) {
+    throw new Error(
+      "É necessário ter atletas e modalidades cadastrados primeiro!"
+    );
+  }
+
+  // Para cada atleta...
+  for (const athlete of athletes) {
+    // ...inscreve em TODAS as modalidades
+    for (const modality of modalities) {
+      const enrollment = new Enrollment();
+
+      // Define status aleatórios respeitando a regra
+      enrollment.approved = faker.number.float({ min: 0, max: 1 }) <= 0.9;
+      enrollment.active =
+        enrollment.approved && faker.number.float({ min: 0, max: 1 }) <= 0.9; // Só ativa se aprovada
+
+      // Datas realistas (últimos 6 meses)
+      enrollment.created_at = faker.date.between({
+        from: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // 180 dias atrás
+        to: new Date(),
+      });
+      enrollment.updated_at = faker.date.between({
+        from: enrollment.created_at,
+        to: new Date(),
+      });
+
+      // Associa atleta e modalidade
+      enrollment.athlete = athlete;
+      enrollment.modality = modality;
+
+      await enrollmentRepository.save(enrollment);
+
+      console.log(
+        `Inscrição: ${athlete.name} -> ${modality.name} | ` +
+          `Status: ${enrollment.approved ? "Aprovada" : "Recusada"} ` +
+          `${enrollment.active ? "e Ativa" : " e Inativa"}`
+      );
+    }
+  }
+
+  const atendimentRepository = AppDataSource.getRepository(Atendiment);
+
+  const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // 3 meses atrás
+
+  for (const modality of modalities) {
+    console.log(`\nProcessando modalidade: ${modality.name}`);
+
+    // Gera 30 dias de chamadas (consecutivos)
+    for (let day = 0; day < 30; day++) {
+      const currentDate = addDays(startDate, day);
+
+      // Busca TODOS os atletas ativos nesta modalidade na data atual
+      const activeEnrollments = await enrollmentRepository.find({
+        where: {
+          modality: { id: modality.id },
+          approved: true,
+          active: true,
+        },
+        relations: ["athlete"],
+      });
+
+      if (activeEnrollments.length === 0) {
+        console.log(`Dia ${day + 1}: Nenhum atleta ativo. Pulando...`);
+        continue;
+      }
+
+      console.log(`Dia ${day + 1}: ${activeEnrollments.length} atletas ativos`);
+
+      // Para cada atleta ativo, registra presença/ausência
+      for (const enrollment of activeEnrollments) {
+        const atendiment = new Atendiment();
+        atendiment.modality = modality;
+        atendiment.athlete = enrollment.athlete;
+
+        // 80% chance de presença (ajustável)
+        atendiment.present = faker.number.float({ min: 0, max: 1 }) <= 0.95;
+        atendiment.created_at = currentDate;
+
+        await atendimentRepository.save(atendiment);
+
+        // Verifica faltas somente se o atleta faltou
+        if (!atendiment.present) {
+          const totalFaltas = await atendimentRepository.count({
+            where: {
+              athlete: { id: enrollment.athlete.id },
+              modality: { id: modality.id },
+              present: false,
+              created_at: LessThanOrEqual(currentDate),
+            },
+          });
+
+          // Inativa após 3 faltas
+          if (totalFaltas > 2) {
+            enrollment.active = false;
+            await enrollmentRepository.save(enrollment);
+
+            console.log(
+              `  █ Atleta ${enrollment.athlete.name} INATIVADO por ${totalFaltas} faltas`
+            );
+          }
+        }
+      }
+    }
+
+    // Contabiliza total de registros
+    const totalAtendimentos = await atendimentRepository.count({
+      where: { modality: { id: modality.id } },
+    });
+
+    console.log(`✅ ${modality.name}: ${totalAtendimentos} registros criados`);
+  }
+};
