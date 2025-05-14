@@ -24,4 +24,7 @@ export class Atendiment {
 
   @Column("boolean")
   present: boolean;
+
+  @Column("text", { nullable: true })
+  description?: string;
 }

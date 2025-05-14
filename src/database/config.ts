@@ -43,18 +43,20 @@ async function resetAndSeedDatabase() {
 
     // 3. Limpeza adaptada para SQLite
     const deletionOrder = [
-      'enrollment',    // Tabela que referencia outras
-      'atendiment',    // Tabela que referencia outras
-      'teacher',       // Tabela que referencia modality
-      'athlete',       // Tabela independente
-      'modality',      // Tabela independente
+      "enrollment", // Tabela que referencia outras
+      "atendiment", // Tabela que referencia outras
+      "teacher", // Tabela que referencia modality
+      "athlete", // Tabela independente
+      "modality", // Tabela independente
       // Adicione outras tabelas conforme necessário
-    ].filter(table => tables.includes(table));
+    ].filter((table) => tables.includes(table));
 
     // 4. Limpeza na ordem correta
     for (const table of deletionOrder) {
       await queryRunner.query(`DELETE FROM "${table}";`);
-      await queryRunner.query(`DELETE FROM sqlite_sequence WHERE name='${table}';`);
+      await queryRunner.query(
+        `DELETE FROM sqlite_sequence WHERE name='${table}';`
+      );
       console.log(`Tabela ${table} limpa`);
     }
 

@@ -11,9 +11,11 @@ import { Manager } from "../entities/manager.entity";
 import { Enrollment } from "../entities/enrollment.entity";
 import { Atendiment } from "../entities/atendiment.entity";
 import { addDays, formatISO } from "date-fns";
+import { Address } from "../entities/address.entity";
 
 export const seedOfAllEntities = async () => {
   const athleteRepository = AppDataSource.getRepository(Athlete);
+  const addressRepository = AppDataSource.getRepository(Address);
 
   // Gerar 10 atletas
   for (let i = 0; i < 40; i++) {
@@ -104,6 +106,51 @@ export const seedOfAllEntities = async () => {
     { name: "Judô", description: "Arte marcial para crianças" },
   ];
 
+  const _athletes = await athleteRepository.find();
+
+  for (let i = 0; i < 40; i++) {
+    const state = faker.location.state();
+    const city = faker.location.city();
+
+    const address = new Address();
+    address.state = state;
+    address.city = city;
+    address.neighborhood = faker.location.county();
+    address.street = faker.location.street();
+    address.number = faker.number.int({ min: 1, max: 9999 });
+    address.complement = faker.helpers.arrayElement([
+      "Casa",
+      "Apartamento 101",
+      "Bloco B",
+      "Fundos",
+      "Sobrado",
+      "Bloco A",
+      "Apartamento 100",
+      "",
+    ]);
+    address.references = faker.helpers.arrayElement([
+      "Próximo ao mercado",
+      "Em frente à praça",
+      "Ao lado da escola",
+      "Casa de esquina",
+      "Perto onde judas perdeu as botas",
+    ]);
+
+    await addressRepository.save(address);
+
+    console.log(
+      `Endereço criado para ${_athletes[i].name}: ${address.street}, ${address.number}`
+    );
+
+    _athletes[i].address = address;
+
+    await athleteRepository.save(_athletes[i]);
+
+    console.log(
+      `Atleta ${_athletes[i].name} recebeu o endereço ${address.street}, ${address.number}`
+    );
+  }
+
   for (const sport of sports) {
     const modality = new Modality();
 
@@ -187,6 +234,41 @@ export const seedOfAllEntities = async () => {
     teacher.about = faker.lorem.paragraph();
     teacher.modality = modalities[i];
 
+    const state = faker.location.state();
+    const city = faker.location.city();
+
+    const address = new Address();
+    address.state = state;
+    address.city = city;
+    address.neighborhood = faker.location.county();
+    address.street = faker.location.street();
+    address.number = faker.number.int({ min: 1, max: 9999 });
+    address.complement = faker.helpers.arrayElement([
+      "Casa",
+      "Apartamento 101",
+      "Bloco B",
+      "Fundos",
+      "Sobrado",
+      "Bloco A",
+      "Apartamento 100",
+      "",
+    ]);
+    address.references = faker.helpers.arrayElement([
+      "Próximo ao mercado",
+      "Em frente à praça",
+      "Ao lado da escola",
+      "Casa de esquina",
+      "Perto onde judas perdeu as botas",
+    ]);
+
+    await addressRepository.save(address);
+
+    console.log(
+      `Endereço criado para ${teacher.name}: ${address.street}, ${address.number}`
+    );
+
+    teacher.address = address;
+
     await teacherRepository.save(teacher);
     console.log(
       `Professor criado: ${teacher.name} | Modalidade: ${teacher.modality.name}`
@@ -216,6 +298,41 @@ export const seedOfAllEntities = async () => {
 
     // Criptografa senha (padrão: "senha123")
     manager.password = await bcrypt.hash("senha123", 10);
+
+    const state = faker.location.state();
+    const city = faker.location.city();
+
+    const address = new Address();
+    address.state = state;
+    address.city = city;
+    address.neighborhood = faker.location.county();
+    address.street = faker.location.street();
+    address.number = faker.number.int({ min: 1, max: 9999 });
+    address.complement = faker.helpers.arrayElement([
+      "Casa",
+      "Apartamento 101",
+      "Bloco B",
+      "Fundos",
+      "Sobrado",
+      "Bloco A",
+      "Apartamento 100",
+      "",
+    ]);
+    address.references = faker.helpers.arrayElement([
+      "Próximo ao mercado",
+      "Em frente à praça",
+      "Ao lado da escola",
+      "Casa de esquina",
+      "Perto onde judas perdeu as botas",
+    ]);
+
+    await addressRepository.save(address);
+
+    console.log(
+      `Endereço criado para ${manager.name}: ${address.street}, ${address.number}`
+    );
+
+    manager.address = address;
 
     await managerRepository.save(manager);
     console.log(`Gestor criado: ${manager.name} | Email: ${manager.email}`);
@@ -300,6 +417,7 @@ export const seedOfAllEntities = async () => {
         const atendiment = new Atendiment();
         atendiment.modality = modality;
         atendiment.athlete = enrollment.athlete;
+        atendiment.description = faker.lorem.sentence();
 
         // 80% chance de presença (ajustável)
         atendiment.present = faker.number.float({ min: 0, max: 1 }) <= 0.95;
