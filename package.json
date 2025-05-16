@@ -7,7 +7,9 @@
     "test": "cross-env NODE_ENV=test node --test --import tsx src/tests/**/*.test.ts",
     "dev": "nodemon --watch \"src/\" -r \"tsconfig-paths/register\" --exec \"ts-node src/server.ts\" -e ts --env-file .env",
     "typeorm": "ts-node -O '{\"module\":\"commonjs\"}' ./node_modules/typeorm/cli.js",
-    "migration:generate": "npm run typeorm -- migration:generate src/migrations/populando-atendimentos -d src/database/config.ts"
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate src/migrations/AddAddressRelation -d src/database/config.ts",
+    "migration": "npx ts-node -O {\\\"module\\\":\\\"commonjs\\\"} ./node_modules/typeorm/cli.js migration:run -d src/database/config.ts",
+     "seed": "npx ts-node src/seeds/seedAtendiments.ts"
   },
   "author": "",
   "license": "ISC",
