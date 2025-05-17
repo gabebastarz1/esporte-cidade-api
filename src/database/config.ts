@@ -11,8 +11,8 @@ export const AppDataSource = new DataSource({
   // password: 'senha',
   database: env.NODE_ENV ? "db.test.sqlite" : "db.sqlite",
   // url:"",
-  synchronize: false, //sincroniza as alterações com o banco
-  dropSchema: false, // !USAR SOMENTE EM DESENVOLVIMENTO: deleta todas as tabelas para sincronizar o banco
+  synchronize: true, //sincroniza as alterações com o banco
+  dropSchema: true, // !USAR SOMENTE EM DESENVOLVIMENTO: deleta todas as tabelas para sincronizar o banco
   logging: false, // loga as queries do banco
   entities: ["src/entities/*{.ts,.js}"],
   migrations: ["src/migrations/*.ts"],

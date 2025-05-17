@@ -10,7 +10,15 @@ import { Teacher } from "../entities/teacher.entity";
 import { Manager } from "../entities/manager.entity";
 import { Enrollment } from "../entities/enrollment.entity";
 import { Atendiment } from "../entities/atendiment.entity";
-import { addDays, formatISO } from "date-fns";
+import {
+  startOfYear,
+  eachMonthOfInterval,
+  eachDayOfInterval,
+  endOfMonth,
+  format,
+  isWeekend,
+} from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Address } from "../entities/address.entity";
 
 export const seedOfAllEntities = async () => {
@@ -386,74 +394,178 @@ export const seedOfAllEntities = async () => {
 
   const atendimentRepository = AppDataSource.getRepository(Atendiment);
 
-  const startDate = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // 3 meses atrás
+  // modalidade -> meses -> dias -> atletas ativos (consulta)
+  const year = new Date().getFullYear();
+  const startDate = startOfYear(new Date(year, 0, 1));
 
+  // 1. Obter todas as modalidades
+
+  // 2. Iterar sobre cada modalidade
   for (const modality of modalities) {
     console.log(`\nProcessando modalidade: ${modality.name}`);
 
-    // Gera 30 dias de chamadas (consecutivos)
-    for (let day = 0; day < 30; day++) {
-      const currentDate = addDays(startDate, day);
+    // 3. Obter todos os meses do ano
+    const months = eachMonthOfInterval({
+      start: startDate,
+      end: new Date(year, 2, 31),
+    });
 
-      // Busca TODOS os atletas ativos nesta modalidade na data atual
-      const activeEnrollments = await enrollmentRepository.find({
-        where: {
-          modality: { id: modality.id },
-          approved: true,
-          active: true,
-        },
-        relations: ["athlete"],
+    // 4. Iterar sobre cada mês
+    for (const month of months) {
+      const monthName = format(month, "MMMM", { locale: ptBR });
+      console.log(`\n  Mês: ${monthName}`);
+
+      // 5. Obter todos os dias do mês (exceto finais de semana)
+      const daysInMonth = eachDayOfInterval({
+        start: month,
+        end: endOfMonth(month),
       });
 
-      if (activeEnrollments.length === 0) {
-        console.log(`Dia ${day + 1}: Nenhum atleta ativo. Pulando...`);
-        continue;
-      }
+      // 6. Iterar sobre cada dia útil
+      for (const day of daysInMonth) {
+        const formattedDate = format(day, "yyyy-MM-dd");
+        console.log(`    Dia: ${formattedDate}`);
 
-      console.log(`Dia ${day + 1}: ${activeEnrollments.length} atletas ativos`);
+        // 7. Buscar atletas ativos APENAS para esta modalidade e data
+        const activeEnrollments = await enrollmentRepository.find({
+          where: {
+            modality: { id: modality.id },
+            approved: true,
+            active: true,
+            // Adicione esta condição se houver datas de início/término
+            // start_date: LessThanOrEqual(day),
+            // end_date: MoreThanOrEqual(day)
+          },
+          relations: ["athlete"],
+        });
 
-      // Para cada atleta ativo, registra presença/ausência
-      for (const enrollment of activeEnrollments) {
-        const atendiment = new Atendiment();
-        atendiment.modality = modality;
-        atendiment.athlete = enrollment.athlete;
-        atendiment.description = faker.lorem.sentence();
+        if (activeEnrollments.length === 0) {
+          console.log("      Nenhum atleta ativo. Pulando...");
+          continue;
+        }
 
-        // 80% chance de presença (ajustável)
-        atendiment.present = faker.number.float({ min: 0, max: 1 }) <= 0.95;
-        atendiment.created_at = currentDate;
+        console.log(`${activeEnrollments.length} atletas ativos`);
 
-        await atendimentRepository.save(atendiment);
+        // 8. Gerar atendimentos para cada atleta ativo
+        const dailyAtendimentos = activeEnrollments.map((enrollment) => {
+          const present = faker.number.float({ min: 0, max: 1 }) <= 0.95; // 95% presença
 
-        // Verifica faltas somente se o atleta faltou
-        if (!atendiment.present) {
-          const totalFaltas = await atendimentRepository.count({
-            where: {
-              athlete: { id: enrollment.athlete.id },
-              modality: { id: modality.id },
-              present: false,
-              created_at: LessThanOrEqual(currentDate),
-            },
+          console.log(
+            `${enrollment.athlete.name} recebeu ${
+              present ? "presença" : "falta"
+            }`
+          );
+
+          return atendimentRepository.create({
+            modality,
+            athlete: enrollment.athlete,
+            present,
+            description: present
+              ? "Aula normal"
+              : `Falta: ${faker.lorem.sentence()}`,
+            created_at: day,
           });
+        });
 
-          // Inativa após 3 faltas
-          if (totalFaltas > 2) {
-            enrollment.active = false;
-            await enrollmentRepository.save(enrollment);
+        // 9. Salvar em batch (lote) para o dia
+        await atendimentRepository.save(dailyAtendimentos);
+        console.log(
+          `      ${dailyAtendimentos.length} atendimentos registrados`
+        );
 
-            console.log(
-              `  █ Atleta ${enrollment.athlete.name} INATIVADO por ${totalFaltas} faltas`
-            );
-          }
+        // 10. Opcional: Verificar e atualizar status por faltas
+        const enrollmentsToInactivate = await enrollmentRepository
+          .createQueryBuilder("enrollment")
+          .innerJoin("enrollment.athlete", "athlete")
+          .innerJoin(
+            "atendiment",
+            "atendiment",
+            "atendiment.athleteId = athlete.id AND atendiment.modalityId = :modalityId",
+            { modalityId: modality.id }
+          )
+          .where("enrollment.active = :active", { active: true })
+          .andWhere("atendiment.present = :present", { present: false })
+          .andWhere("atendiment.created_at <= :date", { day })
+          .groupBy("enrollment.id, athlete.id")
+          .having("COUNT(atendiment.id) > :maxFaltas", { maxFaltas: 2 })
+          .getMany();
+
+        if (enrollmentsToInactivate.length > 0) {
+          enrollmentsToInactivate.forEach((e) => (e.active = false));
+          await enrollmentRepository.save(enrollmentsToInactivate);
+          console.log(
+            `      ${enrollmentsToInactivate.length} atletas inativados por excesso de faltas`
+          );
         }
       }
     }
-
-    // Contabiliza total de registros
-    const totalAtendimentos = await atendimentRepository.count({
-      where: { modality: { id: modality.id } },
-    });
-
-    console.log(`✅ ${modality.name}: ${totalAtendimentos} registros criados`);
   }
+  // for (const modality of modalities) {
+  //   console.log(`\nProcessando modalidade: ${modality.name}`);
+
+  //   // Gera 30 dias de chamadas (consecutivos)
+  //   for (let day = 0; day < 30; day++) {
+  //     // const currentDate = addDays(startDate, day);
+
+  //     // Busca TODOS os atletas ativos nesta modalidade na data atual
+  //     const activeEnrollments = await enrollmentRepository.find({
+  //       where: {
+  //         modality: { id: modality.id },
+  //         approved: true,
+  //         active: true,
+  //       },
+  //       relations: ["athlete"],
+  //     });
+
+  //     if (activeEnrollments.length === 0) {
+  //       console.log(`Dia ${day + 1}: Nenhum atleta ativo. Pulando...`);
+  //       continue;
+  //     }
+
+  //     console.log(`Dia ${day + 1}: ${activeEnrollments.length} atletas ativos`);
+
+  //     // Para cada atleta ativo, registra presença/ausência
+  //     for (const enrollment of activeEnrollments) {
+  //       const atendiment = new Atendiment();
+  //       atendiment.modality = modality;
+  //       atendiment.athlete = enrollment.athlete;
+  //       atendiment.description = faker.lorem.sentence();
+
+  //       // 80% chance de presença (ajustável)
+  //       atendiment.present = faker.number.float({ min: 0, max: 1 }) <= 0.95;
+  //       atendiment.created_at = currentDate;
+
+  //       await atendimentRepository.save(atendiment);
+
+  //       // Verifica faltas somente se o atleta faltou
+  //       if (!atendiment.present) {
+  //         const totalFaltas = await atendimentRepository.count({
+  //           where: {
+  //             athlete: { id: enrollment.athlete.id },
+  //             modality: { id: modality.id },
+  //             present: false,
+  //             created_at: LessThanOrEqual(currentDate),
+  //           },
+  //         });
+
+  //         // Inativa após 3 faltas
+  //         if (totalFaltas > 2) {
+  //           enrollment.active = false;
+  //           await enrollmentRepository.save(enrollment);
+
+  //           console.log(
+  //             `  █ Atleta ${enrollment.athlete.name} INATIVADO por ${totalFaltas} faltas`
+  //           );
+  //         }
+  //       }
+  //     }
+  //   }
+
+  //   // Contabiliza total de registros
+  //   const totalAtendimentos = await atendimentRepository.count({
+  //     where: { modality: { id: modality.id } },
+  //   });
+
+  //   console.log(`✅ ${modality.name}: ${totalAtendimentos} registros criados`);
+  // }
 };
