@@ -225,15 +225,15 @@ export const seedOfAllEntities = async () => {
     teacher.email = faker.internet.email({
       firstName: teacher.name.split(" ")[0],
     });
-    teacher.cpf = faker.string.numeric(11); // Gera CPF sem formatação
+    teacher.cpf = faker.string.numeric(11);
     teacher.rg = faker.string.numeric(9);
     teacher.birthday = faker.date
       .birthdate({ min: 25, max: 60, mode: "age" })
       .toISOString()
       .split("T")[0];
-    teacher.phone = faker.phone.number({ style: "national" }); // Sem formatação
+    teacher.phone = faker.phone.number({ style: "national" });
     teacher.photo_url = faker.image.avatar();
-    teacher.role = Roles.TEACHER; // Supondo que existe um enum Roles.TEACHER
+    teacher.role = Roles.TEACHER;
 
     // Criptografa senha (padrão: "senha123")
     teacher.password = await bcrypt.hash(`senha${i}`, 10);
@@ -282,6 +282,64 @@ export const seedOfAllEntities = async () => {
       `Professor criado: ${teacher.name} | Modalidade: ${teacher.modality.name}`
     );
   }
+
+  let teacherDemo = new Teacher();
+
+  teacherDemo.email = "teste@gmail.com";
+  teacherDemo.password = await bcrypt.hash(`senha12345`, 10);
+  teacherDemo.name = faker.person.fullName();
+  teacherDemo.cpf = faker.string.numeric(11); // Gera CPF sem formatação
+  teacherDemo.rg = faker.string.numeric(9);
+  teacherDemo.birthday = faker.date
+    .birthdate({ min: 25, max: 60, mode: "age" })
+    .toISOString()
+    .split("T")[0];
+  teacherDemo.phone = faker.phone.number({ style: "national" }); // Sem formatação
+  teacherDemo.photo_url = faker.image.avatar();
+  teacherDemo.role = Roles.TEACHER;
+  teacherDemo.about = faker.lorem.paragraph();
+  teacherDemo.modality = modalities[0];
+
+  const state = faker.location.state();
+  const city = faker.location.city();
+
+  const address = new Address();
+  address.state = state;
+  address.city = city;
+  address.neighborhood = faker.location.county();
+  address.street = faker.location.street();
+  address.number = faker.number.int({ min: 1, max: 9999 });
+  address.complement = faker.helpers.arrayElement([
+    "Casa",
+    "Apartamento 101",
+    "Bloco B",
+    "Fundos",
+    "Sobrado",
+    "Bloco A",
+    "Apartamento 100",
+    "",
+  ]);
+  address.references = faker.helpers.arrayElement([
+    "Próximo ao mercado",
+    "Em frente à praça",
+    "Ao lado da escola",
+    "Casa de esquina",
+    "Perto onde judas perdeu as botas",
+  ]);
+
+  await addressRepository.save(address);
+
+  console.log(
+    `Endereço criado para ${teacherDemo.name}: ${address.street}, ${address.number}`
+  );
+
+  teacherDemo.address = address;
+
+  await teacherRepository.save(teacherDemo);
+
+  console.log(
+    `Professor criado: ${teacherDemo.name} | Modalidade: ${teacherDemo.modality.name}`
+  );
 
   const managerRepository = AppDataSource.getRepository(Manager);
 
