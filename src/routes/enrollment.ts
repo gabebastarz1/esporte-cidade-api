@@ -6,7 +6,7 @@ import { Enrollment } from "../entities/enrollment.entity";
 import { authentication } from "../middleware/auth.middleware";
 import { JwtPayload } from 'jsonwebtoken';
 import { Roles } from "../enums/roles.enum";
-import { Teacher } from "src/entities/teacher.entity";
+import { Teacher } from "../entities/teacher.entity";
 
 const router = express.Router();
 const enrollmentRepository = AppDataSource.getRepository(Enrollment);
@@ -79,9 +79,61 @@ router.get("/", authentication, async (req: AuthRequest, res: Response) => {
             where.active = active;
         }
 
-        const enrollments = await enrollmentRepository.find({ where });
+        const enrollments = await enrollmentRepository.find({
+            where,
+            relations: ['athlete', 'modality']
+        });
 
         res.status(200).json(enrollments);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.get("/:id", authentication, async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const query = req.query;
+
+        const where: any = { id: Number(id) };
+
+        if (query.approved !== null && query.approved !== undefined) {
+            where.approved = query.approved === 'true';
+        }
+
+        const enrollment = await enrollmentRepository.findOne({
+            where,
+            relations: ['athlete', 'modality']
+        });
+
+        if (!enrollment) {
+            return res.status(404).json({ message: "Inscrição não encontrada" });
+        }
+
+        res.status(200).json([enrollment]);  // Wrap in array
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.put("/:id", authentication, async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { approved } = req.body;
+
+        const enrollment = await enrollmentRepository.findOne({
+            where: { id: Number(id) },
+            relations: ['athlete', 'modality']
+        });
+
+        if (!enrollment) {
+            return res.status(404).json({ message: "Inscrição não encontrada" });
+        }
+
+        enrollment.approved = approved;
+        await enrollmentRepository.save(enrollment);
+
+        res.status(200).json(enrollment);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
