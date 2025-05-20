@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Athlete } from "../entities/athlete.entity";
 import { LessThanOrEqual } from "typeorm";
 import { Enrollment } from "../entities/enrollment.entity";
+import { authenticate } from "../middlewares/middleware-auth";
 
 const router = express.Router();
 const modalityRepository = AppDataSource.getRepository(Modality);
@@ -30,7 +31,7 @@ export const AtendimentSchema = z.object({
   modalityId: z.number().positive(),
   athleteId: z.number().positive(),
   present: z.boolean(),
-  created_at: z.date().optional(),
+  created_at: z.string().regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/),
 });
 
 export const CreateAtendimentsSchema = z.array(AtendimentSchema).nonempty();
@@ -59,46 +60,61 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/:id/athletes-availible", async (req: Request, res: Response) => {
-  const id_modality = parseInt(req.params.id, 10);
+router.get(
+  "/:id/athletes-availible",
+  authenticate,
+  async (req: Request, res: Response) => {
+    const id_modality = parseInt(req.params.id, 10);
 
-  const athletes_availible = await athleteRepository.find({
-    where: {
-      enrollments: {
-        active: true,
-        approved: true,
-        modality: {
-          id: id_modality,
+    console.log("modalidade: " + req.params.id);
+
+    // Primeiro buscamos os atletas ativos
+    const athletes = await athleteRepository.find({
+      where: {
+        enrollments: {
+          active: true,
+          approved: true,
+          modality: {
+            id: id_modality,
+          },
         },
       },
-    },
-    select: {
-      id: true,
-      name: true,
-      cpf: true,
-      enrollments: {
-        id: true, // Precisamos selecionar pelo menos um campo da enrollment
-        modality: {
-          id: true,
-          name: true,
-        },
+      select: {
+        id: true,
+        name: true,
+        photo_url: true,
       },
-    },
-    order: {
-      name: "ASC",
-    },
-    relations: {
-      enrollments: {
-        modality: true,
+      order: {
+        name: "ASC",
       },
-    },
-  });
+    });
 
-  res.status(200).json({ athletes_availible });
-});
+    // Agora buscamos as faltas para cada atleta
+    const athletesWithAbsences = await Promise.all(
+      athletes.map(async (athlete) => {
+        const absencesCount = await atendimentsRepository.count({
+          where: {
+            athlete: { id: athlete.id },
+            modality: { id: id_modality },
+            present: false,
+          },
+        });
+
+        return {
+          ...athlete,
+          faltas: absencesCount,
+        };
+      })
+    );
+
+    res.status(200).json(athletesWithAbsences);
+  }
+);
 
 router.post("/:id/receive-atendiments", async (req: Request, res: Response) => {
   try {
+    console.log(req.body);
+
     const validation = CreateAtendimentsSchema.safeParse(req.body);
 
     if (!validation.success) {
@@ -134,7 +150,10 @@ router.post("/:id/receive-atendiments", async (req: Request, res: Response) => {
           modality: { id: a.modalityId },
           athlete: { id: a.athleteId },
           present: a.present,
-          created_at: a.created_at || new Date(),
+          created_at: new Date(
+            (a.created_at ? new Date(a.created_at) : new Date()).getTime() -
+              3 * 60 * 60 * 1000
+          ),
         }))
       )
       .execute();
@@ -147,7 +166,9 @@ router.post("/:id/receive-atendiments", async (req: Request, res: Response) => {
           athlete: { id: atendimento.athleteId },
           modality: { id: modalityId },
           present: false,
-          created_at: LessThanOrEqual(atendimento.created_at || new Date()),
+          created_at: LessThanOrEqual(
+            new Date(atendimento.created_at) || new Date()
+          ),
         },
       });
 
@@ -170,6 +191,8 @@ router.post("/:id/receive-atendiments", async (req: Request, res: Response) => {
         );
       }
     }
+
+    console.log("recebeu");
 
     res.status(201).json({ message: "Atendimentos registrados com sucesso." });
   } catch (error) {

@@ -89,6 +89,8 @@ export const seedOfAllEntities = async () => {
       "Penicilina",
     ]);
 
+    athlete.photo_url = faker.image.avatar();
+
     // Fotos do CPF (URLs fictícias)
     athlete.photo_url_cpf_front = faker.image.urlLoremFlickr({
       category: "document",
@@ -462,7 +464,7 @@ export const seedOfAllEntities = async () => {
   for (const modality of modalities) {
     console.log(`\nProcessando modalidade: ${modality.name}`);
 
-    // 3. Obter todos os meses do ano
+    // 3. Obter todos os tres primeiros meses do ano
     const months = eachMonthOfInterval({
       start: startDate,
       end: new Date(year, 2, 31),
@@ -506,13 +508,7 @@ export const seedOfAllEntities = async () => {
 
         // 8. Gerar atendimentos para cada atleta ativo
         const dailyAtendimentos = activeEnrollments.map((enrollment) => {
-          const present = faker.number.float({ min: 0, max: 1 }) <= 0.95; // 95% presença
-
-          console.log(
-            `${enrollment.athlete.name} recebeu ${
-              present ? "presença" : "falta"
-            }`
-          );
+          const present = faker.number.float({ min: 0, max: 1 }) <= 0.98;
 
           return atendimentRepository.create({
             modality,
@@ -531,30 +527,34 @@ export const seedOfAllEntities = async () => {
           `      ${dailyAtendimentos.length} atendimentos registrados`
         );
 
-        // 10. Opcional: Verificar e atualizar status por faltas
-        const enrollmentsToInactivate = await enrollmentRepository
-          .createQueryBuilder("enrollment")
-          .innerJoin("enrollment.athlete", "athlete")
-          .innerJoin(
-            "atendiment",
-            "atendiment",
-            "atendiment.athleteId = athlete.id AND atendiment.modalityId = :modalityId",
-            { modalityId: modality.id }
-          )
-          .where("enrollment.active = :active", { active: true })
-          .andWhere("atendiment.present = :present", { present: false })
-          .andWhere("atendiment.created_at <= :date", { day })
-          .groupBy("enrollment.id, athlete.id")
-          .having("COUNT(atendiment.id) > :maxFaltas", { maxFaltas: 2 })
-          .getMany();
+        const atendimentosComFalta = dailyAtendimentos.filter(
+          (p) => !p.present
+        );
 
-        if (enrollmentsToInactivate.length > 0) {
-          enrollmentsToInactivate.forEach((e) => (e.active = false));
-          await enrollmentRepository.save(enrollmentsToInactivate);
-          console.log(
-            `      ${enrollmentsToInactivate.length} atletas inativados por excesso de faltas`
-          );
-        }
+        console.log(`Verificando inatividade por faltas`);
+
+        atendimentosComFalta.forEach(async (atendimento) => {
+          const totalFaltasAtleta = await atendimentRepository.count({
+            where: {
+              modality: { id: modality.id },
+              athlete: { id: atendimento.athlete.id },
+              present: false,
+            },
+          });
+
+          if (totalFaltasAtleta > 2) {
+            await enrollmentRepository.update(
+              {
+                athlete: { id: atendimento.athlete.id },
+                modality: { id: modality.id },
+              },
+              { active: false }
+            );
+            console.log(
+              `Atleta ${atendimento.athlete.name} INATIVADO por ${totalFaltasAtleta} faltas`
+            );
+          }
+        });
       }
     }
   }

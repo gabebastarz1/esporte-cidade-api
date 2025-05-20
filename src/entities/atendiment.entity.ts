@@ -13,7 +13,7 @@ export class Atendiment {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @CreateDateColumn({ type: "date", default: () => "CURRENT_TIMESTAMP" })
+  @CreateDateColumn({ type: "datetime", default: () => "CURRENT_TIMESTAMP" })
   created_at: Date;
 
   @ManyToOne(() => Modality, { onDelete: "SET NULL" })

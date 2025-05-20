@@ -1,12 +1,15 @@
 import { Request, Response } from "express";
 import { AthleteAuthService } from "../services/auth-athlete.service";
 import { ManagerAuthService } from "../services/auth-manager.service";
-import { TeacherAuthService } from '../services/auth-teacher.service';
+import { TeacherAuthService } from "../services/auth-teacher.service";
 
 export class AuthController {
   static async login(req: Request, res: Response): Promise<void> {
     try {
       const { type, credentials } = req.body;
+
+      console.log(type);
+      console.log(credentials);
 
       let result;
       switch (type) {
@@ -17,20 +20,20 @@ export class AuthController {
           result = await new ManagerAuthService().authenticate(credentials);
           break;
         case "teacher":
-            result = await new TeacherAuthService().authenticate(credentials);
+          result = await new TeacherAuthService().authenticate(credentials);
           break;
         default:
-            res.status(400).json({
-                success: false,
-                message: "Tipo de usuário inválido",
-              });
+          res.status(400).json({
+            success: false,
+            message: "Tipo de usuário inválido",
+          });
 
-            return
+          return;
       }
 
       if (!result.success) {
         res.status(401).json(result);
-        return
+        return;
       }
 
       // Set refresh token as HTTP-only cookie
@@ -44,16 +47,15 @@ export class AuthController {
         accessToken: result.data.accessToken,
         user: result.data.user,
       });
-      return
-      
+      return;
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({
         success: false,
         message: "Erro interno do servidor",
       });
-      
-      return
+
+      return;
     }
   }
 
@@ -69,16 +71,15 @@ export class AuthController {
         // Add to blacklist if implemented
       }
       res.status(204).end();
-      return
-
+      return;
     } catch (error) {
       console.error("Logout error:", error);
       res.status(500).json({
         success: false,
         message: "Erro interno do servidor",
       });
-      
-      return 
+
+      return;
     }
   }
 }

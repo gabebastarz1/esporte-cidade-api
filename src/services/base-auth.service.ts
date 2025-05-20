@@ -1,6 +1,6 @@
-import { sign, verify } from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import { authConfig } from '../config/auth';
+import { sign, verify } from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import { authConfig } from "../config/auth";
 interface User {
   id: number;
   email: string;
@@ -12,10 +12,13 @@ export abstract class BaseAuthService<T> {
 
   async authenticate(credentials: any) {
     try {
-      const user = await this.findUser(credentials) as User | null;
+      const user = (await this.findUser(credentials)) as User | null;
       if (!user) return this.failResponse("usuario inválido");
 
-      const passwordMatch = await bcrypt.compare(credentials.password, user.password);
+      const passwordMatch = await bcrypt.compare(
+        credentials.password,
+        user.password
+      );
       if (!passwordMatch) return this.failResponse("senha incorreta");
 
       const tokens = this.generateTokens(user);
@@ -35,11 +38,9 @@ export abstract class BaseAuthService<T> {
       { expiresIn: authConfig.accessToken.expiresIn }
     );
 
-    const refreshToken = sign(
-      { id: user.id },
-      authConfig.refreshToken.secret,
-      { expiresIn: authConfig.refreshToken.expiresIn }
-    );
+    const refreshToken = sign({ id: user.id }, authConfig.refreshToken.secret, {
+      expiresIn: authConfig.refreshToken.expiresIn,
+    });
 
     return { accessToken, refreshToken };
   }
@@ -51,8 +52,8 @@ export abstract class BaseAuthService<T> {
       success: true,
       data: {
         ...tokens,
-        user: this.getUserResponse(user)
-      }
+        user: this.getUserResponse(user),
+      },
     };
   }
 

@@ -8,103 +8,110 @@ const router = express.Router();
 const teacherRepository = AppDataSource.getRepository(Teacher);
 
 router
-    .get("/", async (req: Request, res: Response) => {
-        try {
-            const teachers = await teacherRepository.find({
-                relations: ["modality"],
-            });
-            
-            res.json(teachers);
-        } catch (error) {
-            console.error("Erro ao buscar professores:", error.message);
-            console.error(error.stack);
-            res.status(500).json({ message: "Erro ao buscar professores.", error: error.message });
-        }
-    })
-    .get("/:id", async (req: Request, res: Response): Promise<any> => {
-        try {
-            const teacherId = parseInt(req.params.id, 10);
+  .get("/", async (req: Request, res: Response) => {
+    try {
+      const teachers = await teacherRepository.find({
+        relations: ["modality"],
+      });
 
-            if (isNaN(teacherId)) {
-                return res.status(400).json("ID de professor inválido.");
-            }
+      res.json(teachers);
+    } catch (error) {
+      console.error("Erro ao buscar professores:", error.message);
+      console.error(error.stack);
+      res
+        .status(500)
+        .json({ message: "Erro ao buscar professores.", error: error.message });
+    }
+  })
+  .get("/:id", async (req: Request, res: Response): Promise<any> => {
+    try {
+      const teacherId = parseInt(req.params.id, 10);
 
-            const teacher = await teacherRepository.findOneBy({ id: teacherId });
-            if (!teacher) {
-                return res.status(404).json("Professor não encontrado.");
-            }
+      if (isNaN(teacherId)) {
+        return res.status(400).json("ID de professor inválido.");
+      }
 
-            res.status(200).json(teacher);
-        } catch (error) {
-            console.error("Erro ao buscar professor:", error);
-            res.status(500).json("Erro ao buscar professor.");
-        }
-    })
-    .post("/", async (req: Request, res: Response) => {
-        try {
-            const teacher = teacherRepository.create({
-                ...req.body,
-                role: Roles.TEACHER,
-            });
+      const teacher = await teacherRepository.find({
+        where: {
+          id: teacherId,
+        },
+        relations: ["modality"],
+      });
+      if (!teacher) {
+        return res.status(404).json("Professor não encontrado.");
+      }
 
-            await teacherRepository.save(teacher);
-            res.status(201).json(teacher);
-        } catch (error) {
-            console.error("Erro ao criar professor:", error);
-            res.status(500).json("Erro ao criar professor.");
-        }
-    })
-    .put("/:id", async (req: Request, res: Response): Promise<any> => {
-        try {
-            const teacherId = parseInt(req.params.id, 10);
+      res.status(200).json(teacher);
+    } catch (error) {
+      console.error("Erro ao buscar professor:", error);
+      res.status(500).json("Erro ao buscar professor.");
+    }
+  })
+  .post("/", async (req: Request, res: Response) => {
+    try {
+      const teacher = teacherRepository.create({
+        ...req.body,
+        role: Roles.TEACHER,
+      });
 
-            if (isNaN(teacherId)) {
-                return res.status(400).json("ID de professor inválido.");
-            }
+      await teacherRepository.save(teacher);
+      res.status(201).json(teacher);
+    } catch (error) {
+      console.error("Erro ao criar professor:", error);
+      res.status(500).json("Erro ao criar professor.");
+    }
+  })
+  .put("/:id", async (req: Request, res: Response): Promise<any> => {
+    try {
+      const teacherId = parseInt(req.params.id, 10);
 
-            const teacher = await teacherRepository.findOneBy({ id: teacherId });
-            if (!teacher) {
-                return res.status(404).json("Professor não encontrado.");
-            }
+      if (isNaN(teacherId)) {
+        return res.status(400).json("ID de professor inválido.");
+      }
 
-            teacher.name = req.body.name || teacher.name;
-            teacher.cpf = req.body.cpf || teacher.cpf;
-            teacher.rg = req.body.rg || teacher.rg;
-            teacher.birthday = req.body.birthday || teacher.birthday;
-            teacher.phone = req.body.phone || teacher.phone;
-            teacher.photo_url = req.body.photo_url || teacher.photo_url;
-            teacher.email = req.body.email || teacher.email;
+      const teacher = await teacherRepository.findOneBy({ id: teacherId });
+      if (!teacher) {
+        return res.status(404).json("Professor não encontrado.");
+      }
 
-            if (req.body.password) {
-                teacher.password = await bcrypt.hash(req.body.password, 10); // Criptografando a nova senha
-            }
+      teacher.name = req.body.name || teacher.name;
+      teacher.cpf = req.body.cpf || teacher.cpf;
+      teacher.rg = req.body.rg || teacher.rg;
+      teacher.birthday = req.body.birthday || teacher.birthday;
+      teacher.phone = req.body.phone || teacher.phone;
+      teacher.photo_url = req.body.photo_url || teacher.photo_url;
+      teacher.email = req.body.email || teacher.email;
 
-            await teacherRepository.save(teacher);
-            res.status(200).json(teacher);
-        } catch (error) {
-            console.error("Erro ao atualizar professor:", error);
-            res.status(500).json("Erro ao atualizar professor.");
-        }
-    })
-    .delete("/:id", async (req: Request, res: Response): Promise<any> => {
-        try {
-            const teacherId = parseInt(req.params.id, 10);
+      if (req.body.password) {
+        teacher.password = await bcrypt.hash(req.body.password, 10); // Criptografando a nova senha
+      }
 
-            if (isNaN(teacherId)) {
-                return res.status(400).json("ID de professor inválido.");
-            }
+      await teacherRepository.save(teacher);
+      res.status(200).json(teacher);
+    } catch (error) {
+      console.error("Erro ao atualizar professor:", error);
+      res.status(500).json("Erro ao atualizar professor.");
+    }
+  })
+  .delete("/:id", async (req: Request, res: Response): Promise<any> => {
+    try {
+      const teacherId = parseInt(req.params.id, 10);
 
-            const teacher = await teacherRepository.findOneBy({ id: teacherId });
-            if (!teacher) {
-                return res.status(404).json("Professor não encontrado.");
-            }
+      if (isNaN(teacherId)) {
+        return res.status(400).json("ID de professor inválido.");
+      }
 
-            await teacherRepository.remove(teacher);
-            res.status(200).json("Professor deletado com sucesso.");
-        } catch (error) {
-            console.error("Erro ao deletar professor:", error);
-            res.status(500).json("Erro ao deletar professor.");
-        }
-    });
+      const teacher = await teacherRepository.findOneBy({ id: teacherId });
+      if (!teacher) {
+        return res.status(404).json("Professor não encontrado.");
+      }
+
+      await teacherRepository.remove(teacher);
+      res.status(200).json("Professor deletado com sucesso.");
+    } catch (error) {
+      console.error("Erro ao deletar professor:", error);
+      res.status(500).json("Erro ao deletar professor.");
+    }
+  });
 
 export default router;
