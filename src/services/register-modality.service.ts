@@ -1,36 +1,46 @@
 import express, { Router, Request, Response } from "express";
 import { AppDataSource } from "../database/config";
 import { Modality } from "../entities/modality.entity";
-import { Atendiment } from "../entities/atendiment.entity";
-import { Teacher } from "../entities/teacher.entity";
 
 const modalityRepository = AppDataSource.getRepository(Modality);
-const atendimentsRepository = AppDataSource.getRepository(Atendiment);
-const teacherRepository = AppDataSource.getRepository(Teacher)
-// register-modality.service.ts
+
 export const modalityService = {
   async viewModality() {
-    const modalities = await modalityRepository.find({
-      relations: ["teachers", "enrollments", "enrollments.athlete"]
-    });
-    return modalities;
+    const modalities = await modalityRepository.find();
+    const modalitiesWithArrays = modalities.map((mod) => ({
+      ...mod,
+      days_of_week: mod.days_of_week?.split(",").map((s) => s.trim()) || [],
+      class_locations:
+        mod.class_locations?.split(",").map((s) => s.trim()) || [],
+    }));
+    return modalitiesWithArrays;
   },
 
   async viewModalityById(id: number) {
-    const modality = await modalityRepository.findOne({
-      where: { id },
-      relations: ["teachers", "enrollments", "enrollments.athlete"]
-    });
+    const modality = await modalityRepository.findOneBy({ id });
     if (!modality) {
       const error: any = new Error("Modalidade não encontrada");
       error.status = 404;
       throw error;
     }
-    return modality;
+    return {
+      ...modality,
+      days_of_week:
+        modality.days_of_week?.split(",").map((s) => s.trim()) || [],
+      class_locations:
+        modality.class_locations?.split(",").map((s) => s.trim()) || [],
+    };
   },
 
   async createModality(data: any) {
-    const { name, description, days_of_week, start_time, end_time, class_locations, teacherIds } = data;
+    const {
+      name,
+      description,
+      days_of_week,
+      start_time,
+      end_time,
+      class_locations,
+    } = data;
 
     const existModality = await modalityRepository.findOneBy({ name });
     if (existModality) {
@@ -39,59 +49,45 @@ export const modalityService = {
       throw error;
     }
 
-    const teachers = teacherIds ? await teacherRepository.findByIds(teacherIds) : [];
-
     const newModality = modalityRepository.create({
       name,
       description,
-      days_of_week: Array.isArray(days_of_week) ? days_of_week : days_of_week.split(',').map(s => s.trim()),
+      days_of_week: Array.isArray(days_of_week)
+        ? days_of_week.join(", ")
+        : days_of_week,
       start_time,
       end_time,
-      class_locations: Array.isArray(class_locations) ? class_locations : class_locations.split(',').map(s => s.trim()),
-      teachers
+      class_locations: Array.isArray(class_locations)
+        ? class_locations.join(", ")
+        : class_locations,
     });
 
     await modalityRepository.save(newModality);
-    return { 
-      message: "Cadastro realizado com sucesso",
-      modality: newModality 
-    };
+    return { message: "Cadastro realizado com sucesso" };
   },
 
   async updateModality(id: number, data: any) {
-    const modality = await modalityRepository.findOne({
-      where: { id },
-      relations: ["teachers"]
-    });
-    if (!modality) {
-      const error: any = new Error("Modalidade não encontrada");
-      error.status = 404;
-      throw error;
-    }
+  const modality = await modalityRepository.findOneBy({ id });
+  if (!modality) {
+    const error: any = new Error("Modalidade não encontrada");
+    error.status = 404;
+    throw error;
+  }
 
-    // Handle teachers update if provided
-    if (data.teacherIds) {
-      const teachers = await teacherRepository.findByIds(data.teacherIds);
-      modality.teachers = teachers;
-      delete data.teacherIds;
-    }
+  const updatedData = {
+    ...data,
+    days_of_week: Array.isArray(data.days_of_week)
+      ? data.days_of_week.join(", ")
+      : data.days_of_week,
+    class_locations: Array.isArray(data.class_locations)
+      ? data.class_locations.join(", ")
+      : data.class_locations,
+  };
 
-    modalityRepository.merge(modality, {
-      ...data,
-      days_of_week: data.days_of_week ? 
-        (Array.isArray(data.days_of_week) ? data.days_of_week : data.days_of_week.split(',').map(s => s.trim())) 
-        : modality.days_of_week,
-      class_locations: data.class_locations ? 
-        (Array.isArray(data.class_locations) ? data.class_locations : data.class_locations.split(',').map(s => s.trim())) 
-        : modality.class_locations
-    });
-
-    await modalityRepository.save(modality);
-    return { 
-      message: "Modalidade atualizada com sucesso",
-      modality 
-    };
-  },
+  modalityRepository.merge(modality, updatedData);
+  await modalityRepository.save(modality);
+  return { message: "Modalidade atualizada com sucesso" };
+},
 
   async deleteModality(id: number) {
     const modality = await modalityRepository.findOneBy({ id });
@@ -104,53 +100,4 @@ export const modalityService = {
     await modalityRepository.remove(modality);
     return { message: "Modalidade excluída com sucesso" };
   },
-
-  async getAvailableAthletes(id: number) {
-    const modality = await modalityRepository.findOne({
-      where: {
-        id,
-        enrollments: {
-          active: true,
-          approved: true
-        }
-      },
-      relations: ["enrollments", "enrollments.athlete"],
-      order: {
-        enrollments: {
-          athlete: {
-            name: "ASC"
-          }
-        }
-      }
-    });
-
-    if (!modality) {
-      const error: any = new Error("Modalidade não encontrada");
-      error.status = 404;
-      throw error;
-    }
-
-    return {
-      modality: {
-        id: modality.id,
-        name: modality.name
-      },
-      athletes: modality.enrollments.map(enrollment => ({
-        id: enrollment.athlete.id,
-        name: enrollment.athlete.name,
-        cpf: enrollment.athlete.cpf
-      }))
-    };
-  },
-
-  async registerAttendances(data: any[]) {
-    if (!Array.isArray(data)) {
-      const error: any = new Error("Dados de atendimento inválidos");
-      error.status = 400;
-      throw error;
-    }
-
-    await atendimentsRepository.insert(data);
-    return { message: "Atendimentos registrados com sucesso" };
-  }
 };

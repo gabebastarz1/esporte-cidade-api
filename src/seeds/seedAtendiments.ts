@@ -5,6 +5,7 @@ import { Enrollment } from "../entities/enrollment.entity";
 import { Teacher } from "../entities/teacher.entity";
 import { Atendiment } from "../entities/atendiment.entity";
 import { Roles } from "../enums/roles.enum";
+import { Manager } from "../entities/manager.entity";
 
 function getRandomDaysOfWeek() {
   const days = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
@@ -34,6 +35,26 @@ async function seed() {
   const enrollmentRepo = AppDataSource.getRepository(Enrollment);
   const atendimentRepo = AppDataSource.getRepository(Atendiment);
   const teacherRepo = AppDataSource.getRepository(Teacher);
+  const managerRepo = AppDataSource.getRepository(Manager);
+
+
+  // criar manager ana senha 123456789 email ana@teste.com
+  let manager = await managerRepo.findOneBy({ name: "Gestora Ana" });
+
+if (!manager) {
+  manager = managerRepo.create({
+    name: "Gestora Ana",
+    password: "$2b$10$dxK9s52R400Rhgg/2GjbheTGK0BartuE743YTbJiF2VGfEWWe1TpS", 
+    cpf: "11223344556",
+    birthday: "1975-05-20",
+    phone: "11977777777",
+    rg: "1122334",
+    role: Roles.MANAGER,
+    email: "ana@teste.com",
+    photo_url: "",
+  });
+  await managerRepo.save(manager);
+}
 
   // 2. Buscar ou criar o atleta João
   let athlete = await athleteRepo.findOneBy({ name: "João" });
