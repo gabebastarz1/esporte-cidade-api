@@ -75,8 +75,8 @@ async function seed() {
     await teacherRepo.save(teacher);
   }
 
-  await modalityRepo.delete({});
-  await enrollmentRepo.delete({});
+  await modalityRepo.clear();
+  await enrollmentRepo.clear();
 
   // 3. Criar modalidades se não existirem
   const modalityNames = ["Futebol", "Basquete", "Capoeira"];
