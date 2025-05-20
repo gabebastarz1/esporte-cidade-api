@@ -8,11 +8,11 @@
     "test": "cross-env NODE_ENV=test node --test --import tsx src/tests/**/*.test.ts",
     "typeorm": "ts-node -O '{\"module\":\"commonjs\"}' ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- migration:generate src/migrations/populando-atendimentos -d src/database/config.ts",
-    
     "dev": "nodemon --watch \"src/\" -r \"tsconfig-paths/register\" --exec \"ts-node src/server.ts\" -e ts --env-file .env",
     "migration": "npx ts-node -O {\\\"module\\\":\\\"commonjs\\\"} ./node_modules/typeorm/cli.js migration:run -d src/database/config.ts",
     "seed": "npx ts-node src/seeds/seedAtendiments.ts",
     "seedTest": "cross-env NODE_ENV=test npx ts-node src/seeds/seedAtendiments.ts"
+
   },
   "author": "",
   "license": "ISC",
