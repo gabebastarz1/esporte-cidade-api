@@ -1,6 +1,6 @@
-import { sign, verify } from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import { authConfig } from '../config/auth';
+import { sign, verify } from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import { authConfig } from "../config/auth";
 interface User {
   id: number;
   email: string;
@@ -35,11 +35,9 @@ export abstract class BaseAuthService<T> {
       { expiresIn: authConfig.accessToken.expiresIn }
     );
 
-    const refreshToken = sign(
-      { id: user.id },
-      authConfig.refreshToken.secret,
-      { expiresIn: authConfig.refreshToken.expiresIn }
-    );
+    const refreshToken = sign({ id: user.id }, authConfig.refreshToken.secret, {
+      expiresIn: authConfig.refreshToken.expiresIn,
+    });
 
     return { accessToken, refreshToken };
   }
@@ -51,8 +49,8 @@ export abstract class BaseAuthService<T> {
       success: true,
       data: {
         ...tokens,
-        user: this.getUserResponse(user)
-      }
+        user: this.getUserResponse(user),
+      },
     };
   }
 
