@@ -47,3 +47,26 @@ export const deleteModality = async (req: Request, res: Response) => {
     res.status(error.status || 500).json({ message: error.message || "Erro ao excluir modalidade." });
   }
 };
+
+export const getAvailableAthletes = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.id);
+    const result = await modalityService.getAvailableAthletes(id);
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(error.status || 500).json({ 
+      message: error.message || "Erro ao buscar atletas disponíveis." 
+    });
+  }
+};
+
+export const registerAttendances = async (req: Request, res: Response) => {
+  try {
+    const result = await modalityService.registerAttendances(req.body);
+    res.status(201).json(result);
+  } catch (error: any) {
+    res.status(error.status || 500).json({ 
+      message: error.message || "Erro ao registrar atendimentos." 
+    });
+  }
+};
