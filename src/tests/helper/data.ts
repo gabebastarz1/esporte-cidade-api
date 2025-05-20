@@ -88,3 +88,22 @@ export const enrollmentsPlaceholder = [
         updated_at: new Date(),
     }
 ];
+
+export const teachersPlaceholder = [
+  {
+    name: "John Smith",
+    password: "123456",
+    cpf: "12345678901",
+    rg: "MG1234567",
+    birthday: "1980-05-15",
+    phone: "11999998888",
+    photo_url: "https://example.com/photos/john.png",
+    email: "john.smith@example.com",
+    role: Roles.TEACHER,
+    about: "Passionate about teaching physical education and sports.",
+    modality: {
+      id: 1, // assumes modality with id 1 exists
+    },
+    addresses: [],
+  },
+];

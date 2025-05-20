@@ -5,10 +5,13 @@ import { Modality } from "../entities/modality.entity";
 import { Enrollment } from "../entities/enrollment.entity";
 import { authentication } from "../middleware/auth.middleware";
 import { JwtPayload } from 'jsonwebtoken';
+import { Roles } from "../enums/roles.enum";
+import { Teacher } from "../entities/teacher.entity";
 
 const router = express.Router();
 const enrollmentRepository = AppDataSource.getRepository(Enrollment);
-const athleteRepository = AppDataSource.getRepository(Athlete);
+const teacherRepository = AppDataSource.getRepository(Teacher);
+const modalityRepository = AppDataSource.getRepository(Modality);
 
 interface AuthRequest extends Request {
     user?: string | JwtPayload;
@@ -47,42 +50,7 @@ router.post("/", authentication, async (req: AuthRequest, res: Response) => {
     }
 });
 
-router.get("/:athleteId", authentication, async (req: Request, res: Response) => {
-    try {
-        const { athleteId } = req.params;
-        const query = req.query;
-
-        const athlete = await athleteRepository.findOne({ where: { id: Number(athleteId) } });
-        if (!athlete) {
-            return res.status(404).json({ error: "Athlete not found" });
-        }
-
-        const where: any = { athlete: { id: Number(athleteId) } };
-
-        // Só filtra se vier na query
-        if (query.approved !== undefined) {
-            where.approved = query.approved === 'true';
-        }
-        if (query.active !== undefined) {
-            where.active = query.active === 'true';
-        }
-
-        console.log('Consulta WHERE para enrollment:', JSON.stringify(where, null, 2));
-        try {
-          const enrollments = await enrollmentRepository.find({ where, relations: ["modality"] });
-          console.log('Resultado ENROLLMENTS:', JSON.stringify(enrollments, null, 2));
-          res.status(200).json(enrollments);
-        } catch (findErr) {
-          console.error('Erro ao buscar enrollments:', findErr);
-          res.status(500).json({ error: findErr.message, stack: findErr.stack });
-          return;
-        }
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-router.get("/", authentication, async (req: Request, res: Response) => {
+router.get("/", authentication, async (req: AuthRequest, res: Response) => {
     try {
         const query = req.query;
 
@@ -90,6 +58,18 @@ router.get("/", authentication, async (req: Request, res: Response) => {
         const active = query.active === 'true';
 
         const where: any = {};
+
+        if (req.user.role == Roles.ATHLETES) {
+            where.athlete = { id: Number(req.user.id) };
+        }
+
+        if (req.user.role == Roles.TEACHER) {
+            const teacher = await teacherRepository.findOne({ 
+                where: { id: req.user.id },
+                relations: ['modality']
+            });
+            where.modality = { id: Number(teacher?.modality.id) };
+        }
 
         if (query.approved !== null && query.approved !== undefined) {
             where.approved = approved;
@@ -99,9 +79,61 @@ router.get("/", authentication, async (req: Request, res: Response) => {
             where.active = active;
         }
 
-        const enrollments = await enrollmentRepository.find({ where });
+        const enrollments = await enrollmentRepository.find({
+            where,
+            relations: ['athlete', 'modality']
+        });
 
         res.status(200).json(enrollments);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.get("/:id", authentication, async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const query = req.query;
+
+        const where: any = { id: Number(id) };
+
+        if (query.approved !== null && query.approved !== undefined) {
+            where.approved = query.approved === 'true';
+        }
+
+        const enrollment = await enrollmentRepository.findOne({
+            where,
+            relations: ['athlete', 'modality']
+        });
+
+        if (!enrollment) {
+            return res.status(404).json({ message: "Inscrição não encontrada" });
+        }
+
+        res.status(200).json([enrollment]);  // Wrap in array
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.put("/:id", authentication, async (req: AuthRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { approved } = req.body;
+
+        const enrollment = await enrollmentRepository.findOne({
+            where: { id: Number(id) },
+            relations: ['athlete', 'modality']
+        });
+
+        if (!enrollment) {
+            return res.status(404).json({ message: "Inscrição não encontrada" });
+        }
+
+        enrollment.approved = approved;
+        await enrollmentRepository.save(enrollment);
+
+        res.status(200).json(enrollment);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -113,19 +145,24 @@ router.delete("/:id", authentication, async (req: Request, res: Response) => {
 
         await enrollmentRepository.delete(id);
 
-        res.status(200).json({message: "The enrollment was successfully deleted"});
+        res.status(200).json({ message: "The enrollment was successfully deleted" });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-router.put("/:id", authentication, async (req: Request, res: Response) => {
+router.put("/approve/:id", authentication, async (req: AuthRequest, res: Response) => {
     try {
+        if (req.user.role != Roles.TEACHER) {
+            res.status(401).json({ error: "You don't have access rights to use this feature." });
+            return;
+        }
+
         const { id } = req.params;
 
         const enrollment = await enrollmentRepository.findOne({ where: { id: Number(id) } });
 
-        const toEnrollment = await enrollmentRepository.save({ id, ...enrollment, ...req.body });
+        const toEnrollment = await enrollmentRepository.save({ id, ...enrollment, approved: true });
 
         res.status(200).json(toEnrollment);
     } catch (error) {

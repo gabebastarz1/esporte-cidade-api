@@ -1,33 +1,12 @@
-import express, { Router, Request, Response } from "express";
-import { AppDataSource } from "../database/config";
-import { Athlete } from "../entities/athlete.entity";
+import express from "express";
+import { AthleteController } from "../controllers/athlete.controller";
 
-const router: Router = express.Router();
-const athleteRepository = AppDataSource.getRepository(Athlete);
+const router = express.Router();
 
-// GET /api/athletes/:id - Busca atleta por ID
-router.get("/:id", async (req, res) => {
-  try {
-    const athlete = await athleteRepository.findOneBy({ id: Number(req.params.id) });
-    if (!athlete) {
-      return res.status(404).json({ error: "Atleta não encontrado" });
-    }
-    res.json(athlete);
-  } catch (error) {
-    console.error("Erro ao buscar atleta por ID:", error);
-    res.status(500).json({ error: "Erro ao buscar atleta por ID" });
-  }
-});
+router.get("/", AthleteController.getAll);
+router.get("/:id", AthleteController.getById);
+router.post("/", AthleteController.create);
+router.put("/:id", AthleteController.update);
+router.delete("/:id", AthleteController.delete);
 
-// GET /api/athletes/ - Lista todos os atletas
-router.get("/", async (req, res) => {
-  try {
-    const athletes = await athleteRepository.find();
-    res.json(athletes);
-  } catch (error) {
-    console.error("Erro ao buscar atletas:", error);
-    res.status(500).json({ error: "Erro ao buscar atletas" });
-  }
-});
-
-export const athleteRouter = router;
+export default router;

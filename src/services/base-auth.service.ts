@@ -12,14 +12,11 @@ export abstract class BaseAuthService<T> {
 
   async authenticate(credentials: any) {
     try {
-      const user = (await this.findUser(credentials)) as User | null;
-      if (!user) return this.failResponse("usuario inválido");
+      const user = await this.findUser(credentials) as User | null;
+      if (!user) return this.failResponse("usuário ou senha incorreta");
 
-      const passwordMatch = await bcrypt.compare(
-        credentials.password,
-        user.password
-      );
-      if (!passwordMatch) return this.failResponse("senha incorreta");
+      const passwordMatch = await bcrypt.compare(credentials.password, user.password);
+      if (!passwordMatch) return this.failResponse("usuário ou senha incorreta");
 
       const tokens = this.generateTokens(user);
       return this.successResponse(user, tokens);
