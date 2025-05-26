@@ -12,7 +12,7 @@ export const AppDataSource = new DataSource({
   database: env.NODE_ENV ? "db.test.sqlite" : "db.sqlite",
   // url:"",
   synchronize: true, //sincroniza as alterações com o banco
-  dropSchema: true, // !USAR SOMENTE EM DESENVOLVIMENTO: deleta todas as tabelas para sincronizar o banco
+  dropSchema: false, // !USAR SOMENTE EM DESENVOLVIMENTO: deleta todas as tabelas para sincronizar o banco
   logging: false, // loga as queries do banco
   entities: ["src/entities/*{.ts,.js}"],
   migrations: ["src/migrations/*.ts"],
@@ -21,12 +21,12 @@ export const AppDataSource = new DataSource({
 
 AppDataSource.initialize()
   .then(async () => {
-    await resetAndSeedDatabase();
+   // await resetAndSeedDatabase();
   })
   .catch((error) => {
     console.error("Database connection error:", error);
   });
-
+/*
 async function resetAndSeedDatabase() {
   console.log("⚠️ Cleaning tables");
   const queryRunner = AppDataSource.createQueryRunner();
@@ -77,7 +77,7 @@ async function resetAndSeedDatabase() {
   await seedOfAllEntities();
   console.log("Finished seed");
 }
-
+*/
 async function getAllTablesSQLite(queryRunner): Promise<string[]> {
   const tables = await queryRunner.query(
     `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'migrations';`

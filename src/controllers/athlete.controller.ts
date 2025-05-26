@@ -63,10 +63,15 @@ export class AthleteController {
         return res.status(404).json({ message: "Atleta não encontrado." });
       }
 
-      // Update fields
+      // Atualiza os campos recebidos
       Object.assign(athlete, req.body);
 
-      // Hash the password if it's being updated
+      // Atualiza o campo photo_url se vier do front (campo 'photo')
+      if (req.body.photo) {
+        athlete.photo_url = req.body.photo;
+      }
+
+      // Hash da senha se for atualizada
       if (req.body.password) {
         athlete.password = await bcrypt.hash(req.body.password, 10);
       }
