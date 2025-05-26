@@ -23,7 +23,11 @@ export class AthleteController {
         return res.status(400).json({ message: "ID inválido." });
       }
 
-      const athlete = await athleteRepository.findOneBy({ id });
+      // Busca o atleta incluindo o endereço
+      const athlete = await athleteRepository.findOne({
+        where: { id },
+        relations: ["address"]
+      });
       if (!athlete) {
         return res.status(404).json({ message: "Atleta não encontrado." });
       }

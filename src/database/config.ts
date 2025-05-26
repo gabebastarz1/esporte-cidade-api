@@ -77,10 +77,11 @@ async function resetAndSeedDatabase() {
   await seedOfAllEntities();
   console.log("Finished seed");
 }
-*/
+
 async function getAllTablesSQLite(queryRunner): Promise<string[]> {
   const tables = await queryRunner.query(
     `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'migrations';`
   );
   return tables.map((row: { name: string }) => row.name);
 }
+*/
