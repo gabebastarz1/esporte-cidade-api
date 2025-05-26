@@ -61,6 +61,69 @@ router
       res.status(500).json("Erro ao criar professor.");
     }
   })
+  // Remember to add authorization to both these endpoints
+  // The user requesting the password-reset should be the
+  // One logged in
+  .post("/password-reset", async (req, res) => {
+    try {
+      if (!req.body.email) {
+        return res.status(400).send({ error: "The teacher's e-mail is required" });
+      }
+
+      const teacher = await teacherRepository.findOneBy({ email: req.body.email });
+
+      if (!teacher)
+        return res.status(400).send({ error: "A teacher with the given e-mail doesn't exist" });
+
+      let token = await tokenRepository.findOneBy({ teacherId: teacher.id });
+
+      if (!token) {
+        token = await new Token({
+          userId: teacher.id,
+          token: crypto.randomBytes(32).toString("hex"),
+        }).save();
+      }
+
+      const link = `${process.env.BASE_URL}/password-reset/${teacher.id}/${token.token}`;
+
+      // e-mail service
+      await sendEmail(teacher.email, "Password reset", link);
+
+      throw new Error("not yet implemented");
+      res.send({ message: "password reset link sent to your email account" });
+    } catch (error) {
+      res.send("An error occured");
+      console.log(error);
+    }
+  })
+  // Remember to add authorization to both these endpoints
+  // The user requesting the password-reset should be the
+  // One logged in
+  .post("password-reset/:teacherId/:token", async (req, res) => {
+    try {
+        const teacher = await teacherRepository.findOneBy({id: Number(req.params.teacherId)});
+        if (!teacher) return res.status(400).send("invalid link or expired");
+
+        const token = await tokenRepository.findOne({
+            teacherId: teacher.id,
+            token: req.params.token,
+        });
+
+        if (!token) return res.status(400).send("Invalid link or expired");
+
+        teacher.password = req.body.password;
+
+        // Save teacher with the new password
+        // Delete the old token in the database
+        await teacher.save();
+        await token.delete();
+
+        res.send("password reset sucessfully.");
+    } catch (error) {
+        res.send("An error occured");
+        console.log(error);
+    }
+});
   .put("/:id", async (req: Request, res: Response): Promise<any> => {
     try {
       const teacherId = parseInt(req.params.id, 10);
