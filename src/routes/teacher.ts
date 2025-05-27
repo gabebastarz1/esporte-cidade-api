@@ -4,10 +4,10 @@ import { AppDataSource } from "../database/config";
 
 import { Teacher } from "../entities/teacher.entity";
 import { Roles } from "../enums/roles.enum";
-import { Token } from "src/entities/token.entity";
+import { Token } from "../entities/token.entity";
 
 import crypto from "crypto"
-import { sendEmail } from "src/services/email-service";
+import { sendEmail } from "../services/email-service";
 
 const router = express.Router();
 const teacherRepository = AppDataSource.getRepository(Teacher);
