@@ -1,11 +1,17 @@
 import express, { Request, Response } from "express";
+import bcrypt from "bcrypt";
 import { AppDataSource } from "../database/config";
+
 import { Teacher } from "../entities/teacher.entity";
 import { Roles } from "../enums/roles.enum";
-import bcrypt from "bcrypt";
+import { Token } from "src/entities/token.entity";
+
+import crypto from "crypto"
+import { sendEmail } from "src/services/email-service";
 
 const router = express.Router();
 const teacherRepository = AppDataSource.getRepository(Teacher);
+const tokenRepository = AppDataSource.getRepository(Token);
 
 router
   .get("/", async (req: Request, res: Response) => {
@@ -75,21 +81,25 @@ router
       if (!teacher)
         return res.status(400).send({ error: "A teacher with the given e-mail doesn't exist" });
 
-      let token = await tokenRepository.findOneBy({ teacherId: teacher.id });
+      var token = await tokenRepository
+        .createQueryBuilder("token")
+        .leftJoinAndSelect("token.userBase", "userBase")
+        .where("userBase.id = :teacherId", { teacherId: teacher.id })
+        .getOne();
 
       if (!token) {
-        token = await new Token({
-          userId: teacher.id,
+        token = tokenRepository.create({
+          userBase: teacher,
           token: crypto.randomBytes(32).toString("hex"),
-        }).save();
+        })
+
+        await tokenRepository.save(token);
       }
 
       const link = `${process.env.BASE_URL}/password-reset/${teacher.id}/${token.token}`;
 
-      // e-mail service
       await sendEmail(teacher.email, "Password reset", link);
 
-      throw new Error("not yet implemented");
       res.send({ message: "password reset link sent to your email account" });
     } catch (error) {
       res.send("An error occured");
@@ -101,29 +111,29 @@ router
   // One logged in
   .post("password-reset/:teacherId/:token", async (req, res) => {
     try {
-        const teacher = await teacherRepository.findOneBy({id: Number(req.params.teacherId)});
-        if (!teacher) return res.status(400).send("invalid link or expired");
+      const teacher = await teacherRepository.findOneBy({ id: Number(req.params.teacherId) });
+      if (!teacher) return res.status(400).send("invalid link or expired");
 
-        const token = await tokenRepository.findOne({
-            teacherId: teacher.id,
-            token: req.params.token,
-        });
+      const token = await tokenRepository
+        .createQueryBuilder("token")
+        .leftJoinAndSelect("token.userBase", "userBase")
+        .where("userBase.id = :teacherId", { teacherId: teacher.id })
+        .andWhere("token.token = :token", { token: req.params.token })
+        .getOne();
 
-        if (!token) return res.status(400).send("Invalid link or expired");
+      if (!token) return res.status(400).send("Invalid link or expired");
 
-        teacher.password = req.body.password;
+      teacher.password = req.body.password;
 
-        // Save teacher with the new password
-        // Delete the old token in the database
-        await teacher.save();
-        await token.delete();
+      await teacherRepository.save(teacher);
+      await tokenRepository.delete(token);
 
-        res.send("password reset sucessfully.");
+      res.send("password reset sucessfully.");
     } catch (error) {
-        res.send("An error occured");
-        console.log(error);
+      res.send("An error occured");
+      console.log(error);
     }
-});
+  })
   .put("/:id", async (req: Request, res: Response): Promise<any> => {
     try {
       const teacherId = parseInt(req.params.id, 10);

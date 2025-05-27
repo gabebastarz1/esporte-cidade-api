@@ -7,6 +7,7 @@ import {
 } from "typeorm";
 import { Address } from "./address.entity";
 import { Roles } from "../enums/roles.enum";
+import { Token } from "./token.entity";
 
 @Entity("user-base")
 export abstract class UserBase {
@@ -41,6 +42,9 @@ export abstract class UserBase {
     nullable: true,
   })
   address?: Address;
+
+  @OneToMany(() => Token, (t) => t.userBase)
+  tokens: Token[];
 
   // Trocar para enum antes de subir para produção
   @Column({ type: "int", enum: Roles })

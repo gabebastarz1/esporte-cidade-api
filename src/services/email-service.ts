@@ -1,8 +1,7 @@
 import env from "../environment/env";
+import nodemailer from "nodemailer";
 
-const nodemailer = require("nodemailer");
-
-const sendEmail = async (email, subject, text) => {
+export const sendEmail = async (email, subject, text) => {
     try {
         const transporter = nodemailer.createTransport({
             service: "Gmail",
@@ -24,5 +23,3 @@ const sendEmail = async (email, subject, text) => {
         console.log(error, "email not sent");
     }
 };
-
-module.exports = sendEmail;
