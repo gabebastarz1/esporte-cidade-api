@@ -51,7 +51,11 @@ router.get("/", authenticate, async (req: Request, res: Response) => {
       return {
         data: atendimento.created_at,
         modalidade: atendimento.modality?.name || "N/A",
-        //local: atendimento.modality?.class_locations?.[0] || "N/A",
+        local: Array.isArray(atendimento.modality?.class_locations)
+      ? atendimento.modality.class_locations[0] || "N/A"
+      : (typeof atendimento.modality?.class_locations === "string"
+          ? atendimento.modality.class_locations.split(",")[0].trim() || "N/A"
+          : "N/A"),
         present: atendimento.present
       };
     });

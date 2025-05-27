@@ -49,9 +49,13 @@ router
   })
   .post("/", async (req: Request, res: Response) => {
     try {
+      const { password, ...otherFields } = req.body;
+      const hashedPassword = await bcrypt.hash(password, 10);
+
       const teacher = teacherRepository.create({
-        ...req.body,
+        ...otherFields,
         role: Roles.TEACHER,
+        password: hashedPassword,
       });
 
       await teacherRepository.save(teacher);

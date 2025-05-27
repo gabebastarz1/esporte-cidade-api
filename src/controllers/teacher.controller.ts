@@ -41,23 +41,20 @@ export class TeacherController {
 
   static async create(req: Request, res: Response) {
     try {
-      const { id, ...data } = req.body;
-      console.log("Dados recebidos no backend:", req.body)
-      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+      const { id, password, ...otherFields } = req.body;
+      
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
       const teacher = teacherRepository.create({
-        ...req.body,
+        ...otherFields,
         role: Roles.TEACHER,
         password: hashedPassword
       });
-
-      if (req.body.password) {
-        req.body.password = await bcrypt.hash(req.body.password, 10); // Criptografando a senha
-      }
-
+      
       await teacherRepository.save(teacher);
       res.status(201).json(teacher);
     } catch (error) {
-      console.error("Erro ao criar professor:", error);
+      
       res.status(500).json("Erro ao criar professor.");
     }
   }
