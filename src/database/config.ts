@@ -21,7 +21,7 @@ export const AppDataSource = new DataSource({
 
 AppDataSource.initialize()
   .then(async () => {
-    await resetAndSeedDatabase();
+   await resetAndSeedDatabase();
   })
   .catch((error) => {
     console.error("Database connection error:", error);

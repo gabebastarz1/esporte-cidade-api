@@ -78,25 +78,32 @@ router
 
       const teacher = await teacherRepository.findOneBy({ email: req.body.email });
 
+      console.log("\n\n");
+      console.log(teacher);
+
       if (!teacher)
         return res.status(400).send({ error: "A teacher with the given e-mail doesn't exist" });
 
-      var token = await tokenRepository
-        .createQueryBuilder("token")
-        .leftJoinAndSelect("token.userBase", "userBase")
-        .where("userBase.id = :teacherId", { teacherId: teacher.id })
-        .getOne();
+      var token = await tokenRepository.findOne({
+        where: { teacher: { id: teacher.id } }
+      });
 
       if (!token) {
         token = tokenRepository.create({
-          userBase: teacher,
+          teacher: teacher,
           token: crypto.randomBytes(32).toString("hex"),
         })
 
         await tokenRepository.save(token);
       }
 
+      console.log("\n\n");
+      console.log(token);
+
       const link = `${process.env.BASE_URL}/password-reset/${teacher.id}/${token.token}`;
+
+      console.log("\n\n");
+      console.log(link);
 
       await sendEmail(teacher.email, "Password reset", link);
 
@@ -109,17 +116,18 @@ router
   // Remember to add authorization to both these endpoints
   // The user requesting the password-reset should be the
   // One logged in
-  .post("password-reset/:teacherId/:token", async (req, res) => {
+  .post("/password-reset/:teacherId/:token", async (req, res) => {
     try {
       const teacher = await teacherRepository.findOneBy({ id: Number(req.params.teacherId) });
       if (!teacher) return res.status(400).send("invalid link or expired");
 
-      const token = await tokenRepository
-        .createQueryBuilder("token")
-        .leftJoinAndSelect("token.userBase", "userBase")
-        .where("userBase.id = :teacherId", { teacherId: teacher.id })
-        .andWhere("token.token = :token", { token: req.params.token })
-        .getOne();
+      const token = await tokenRepository.findOne({
+        where: { 
+          teacher: { id: teacher.id }, 
+          token: req.params.token
+        },
+        relations: ["teacher"]
+      })
 
       if (!token) return res.status(400).send("Invalid link or expired");
 

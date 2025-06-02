@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from "typeorm"
-import { UserBase } from "./user-base.entity"
+import { Teacher } from "./teacher.entity"
 
 @Entity("token")
 export class Token {
@@ -9,8 +9,8 @@ export class Token {
     @Column({type: "text"})
     token: string
     
-    @ManyToOne(() => UserBase, (user) => user.tokens)
-    userBase: UserBase
+    @ManyToOne(() => Teacher, (teacher) => teacher.tokens)
+    teacher: Teacher
 
     @Column({type: "datetime", default: () => "CURRENT_TIMESTAMP"})
     createdAt: string
