@@ -71,9 +71,6 @@ router
       res.status(500).json("Erro ao criar professor.");
     }
   })
-  // Remember to add authorization to both these endpoints
-  // The user requesting the password-reset should be the
-  // One logged in
   .post("/password-reset", async (req, res) => {
     try {
       if (!req.body.email) {
@@ -112,9 +109,6 @@ router
       console.log(error);
     }
   })
-  // Remember to add authorization to both these endpoints
-  // The user requesting the password-reset should be the
-  // One logged in
   .post("/password-reset/:teacherId/:token", async (req, res) => {
     try {
       const teacher = await teacherRepository.findOneBy({ id: Number(req.params.teacherId) });
