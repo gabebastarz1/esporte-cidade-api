@@ -1,6 +1,8 @@
 import express from "express";
 import { AthleteController } from "../controllers/athlete.controller";
 
+
+
 const router = express.Router();
 
 router.get("/", AthleteController.getAll);

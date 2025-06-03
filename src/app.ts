@@ -1,8 +1,9 @@
-import { athleteRouter, managerRouter, materialRouter, modalityRouter, teacherRouter, authRouter, enrollmentRouter, absencesRouter, registerRouter, authMiddlewareRouter, athleteUserBaseRouter, validCpf, registerModality } from "./routes";
+import { athleteRouter, managerRouter, materialRouter, modalityRouter, teacherRouter, authRouter, enrollmentRouter, absencesRouter, registerRouter, authMiddlewareRouter, athleteUserBaseRouter, validCpf, registerModality, uploads } from "./routes";
 import { existsSync, unlinkSync } from "fs";
 import * as dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
+import path from "path";
 
 dotenv.config();
 
@@ -19,11 +20,13 @@ app.use(cors({
   
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 app.use("/api/material/", materialRouter);
 app.use("/api/athletes/", athleteRouter);
 app.use("/api/userbase/", athleteUserBaseRouter);
 app.use("/api/manager/", managerRouter);
 app.use("/api/teacher/", teacherRouter);
+app.use("/api/uploads", uploads);
 app.use("/api/modality/", modalityRouter);
 app.use("/api/auth/", authRouter);
 app.use("/api/enrollment/", enrollmentRouter);
