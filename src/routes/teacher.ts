@@ -130,7 +130,7 @@ router
 
       if (!token) return res.status(400).send("Invalid link or expired");
 
-      teacher.password = req.body.password;
+      teacher.password = await bcrypt.hash(req.body.password, 10);
 
       await teacherRepository.save(teacher);
       await tokenRepository.delete(token);
