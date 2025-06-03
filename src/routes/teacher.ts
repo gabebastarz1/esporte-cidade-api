@@ -7,7 +7,7 @@ import { Roles } from "../enums/roles.enum";
 import { Token } from "../entities/token.entity";
 
 import crypto from "crypto"
-import { sendEmail } from "../services/email-service";
+import { PASSWORD_RESET_BODY_TEMPLATE, sendEmail } from "../services/email-service";
 
 const router = express.Router();
 const teacherRepository = AppDataSource.getRepository(Teacher);
@@ -78,9 +78,6 @@ router
 
       const teacher = await teacherRepository.findOneBy({ email: req.body.email });
 
-      console.log("\n\n");
-      console.log(teacher);
-
       if (!teacher)
         return res.status(400).send({ error: "A teacher with the given e-mail doesn't exist" });
 
@@ -97,15 +94,13 @@ router
         await tokenRepository.save(token);
       }
 
-      console.log("\n\n");
-      console.log(token);
-
       const link = `${process.env.BASE_URL}/password-reset/${teacher.id}/${token.token}`;
 
-      console.log("\n\n");
-      console.log(link);
+      let email_body = PASSWORD_RESET_BODY_TEMPLATE
+                          .replace("{{user_name}}", teacher.name)
+                          .replace("{{reset_link}}", link);
 
-      await sendEmail(teacher.email, "Password reset", link);
+      await sendEmail(teacher.email, "Password reset", email_body);
 
       res.send({ message: "password reset link sent to your email account" });
     } catch (error) {

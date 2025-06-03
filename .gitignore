@@ -2,5 +2,6 @@
 .env
 /dist
 requests/   
+request/   
 db.sqlite
 db.test.sqlite
