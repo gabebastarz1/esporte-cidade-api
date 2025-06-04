@@ -21,12 +21,12 @@ export const AppDataSource = new DataSource({
 
 AppDataSource.initialize()
   .then(async () => {
-   // await resetAndSeedDatabase();
+   await resetAndSeedDatabase();
   })
   .catch((error) => {
     console.error("Database connection error:", error);
   });
-/*
+
 async function resetAndSeedDatabase() {
   console.log("⚠️ Cleaning tables");
   const queryRunner = AppDataSource.createQueryRunner();
@@ -84,4 +84,3 @@ async function getAllTablesSQLite(queryRunner): Promise<string[]> {
   );
   return tables.map((row: { name: string }) => row.name);
 }
-*/

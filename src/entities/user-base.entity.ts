@@ -40,7 +40,7 @@ export abstract class UserBase {
   @ManyToOne(() => Address, {
     nullable: true,
   })
-  address?: Address;
+  address?: Address;  
 
   // Trocar para enum antes de subir para produção
   @Column({ type: "int", enum: Roles })
