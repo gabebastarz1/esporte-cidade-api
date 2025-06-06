@@ -13,6 +13,9 @@ export class Modality {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({default:true})
+  ativo:boolean;
+
   @Column("text")
   name: string;
 

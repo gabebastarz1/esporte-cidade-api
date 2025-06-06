@@ -21,7 +21,8 @@ export const AppDataSource = new DataSource({
 
 AppDataSource.initialize()
   .then(async () => {
-   await resetAndSeedDatabase();
+    await AppDataSource.runMigrations();
+    await resetAndSeedDatabase();
   })
   .catch((error) => {
     console.error("Database connection error:", error);
@@ -43,6 +44,7 @@ async function resetAndSeedDatabase() {
 
     // 3. Limpeza adaptada para SQLite
     const deletionOrder = [
+      "address",
       "enrollment", // Tabela que referencia outras
       "atendiment", // Tabela que referencia outras
       "teacher", // Tabela que referencia modality
