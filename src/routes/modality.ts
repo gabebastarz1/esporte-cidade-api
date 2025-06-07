@@ -72,7 +72,7 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 router.get(
-  "/:id/athletes-availible",
+  "/:id/athletes-available",
   authenticate,
   async (req: Request, res: Response) => {
     const id_modality = parseInt(req.params.id, 10);
