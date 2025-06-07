@@ -7,14 +7,19 @@ import { Athlete } from "../entities/athlete.entity";
 import { LessThanOrEqual } from "typeorm";
 import { Enrollment } from "../entities/enrollment.entity";
 import { authenticate } from "../middlewares/middleware-auth";
-import { assignTeacherToModality, createModality, deleteModality, updateModality, viewModalities, viewModalityById } from "../controllers/modality.controller";
+import {
+  assignTeacherToModality,
+  createModality,
+  deleteModality,
+  updateModality,
+  viewModalities,
+  viewModalityById,
+} from "../controllers/modality.controller";
 
 const router = express.Router();
 const modalityRepository = AppDataSource.getRepository(Modality);
 const atendimentsRepository = AppDataSource.getRepository(Atendiment);
 const athleteRepository = AppDataSource.getRepository(Athlete);
-
-
 
 export const AthleteAvailableResponseSchema = z.object({
   id: z.number(),
@@ -37,12 +42,11 @@ export const AtendimentSchema = z.object({
   created_at: z.string().regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/),
 });
 
-
-router.get("/all", viewModalities)
-router.get("/single/:id", viewModalityById)
-router.post("/create", createModality) 
-router.put("/update/:id", updateModality)
-router.delete("/delete/:id", deleteModality)
+router.get("/all", viewModalities);
+router.get("/single/:id", viewModalityById);
+router.post("/create", createModality);
+router.put("/update/:id", updateModality);
+router.delete("/delete/:id", deleteModality);
 router.put("/assign-teacher/:modalityId", assignTeacherToModality);
 
 export const CreateAtendimentsSchema = z.array(AtendimentSchema).nonempty();
@@ -214,5 +218,41 @@ router.post("/:id/receive-atendiments", async (req: Request, res: Response) => {
     });
   }
 });
+
+//pegar todos os atendimentos agrupados por data
+router.get(
+  "/teacher/:teacherId/atendiments",
+  async (req: Request, res: Response) => {
+    const teacherId = parseInt(req.params.teacherId, 10);
+
+    try {
+      const atendimentos = await atendimentsRepository
+        .createQueryBuilder("atendiment")
+        .leftJoinAndSelect("atendiment.modality", "modality")
+        .leftJoin("modality.teachers", "teacher")
+        .where("teacher.id = :teacherId", { teacherId })
+        .select([
+          "atendiment.created_at AS created_at",
+          "atendiment.description AS description",
+          "modality.name AS modalidade",
+          "modality.class_locations AS local"
+        ])
+        .groupBy("atendiment.created_at, atendiment.description, modality.name, modality.class_locations")
+        .orderBy("atendiment.created_at", "DESC")
+        .getRawMany();
+
+      res.status(200).json(atendimentos);
+    } catch (error) {
+      console.error(
+        "Erro ao buscar atendimentos por professor:",
+        error.message
+      );
+      res.status(500).json({
+        message: "Erro ao buscar atendimentos por professor.",
+        error: error.message,
+      });
+    }
+  }
+);
 
 export default router;
