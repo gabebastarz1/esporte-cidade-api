@@ -32,6 +32,7 @@ export class TeacherController {
         return res.status(404).json("Professor não encontrado.");
       }
 
+      console.log("[TeacherController.getById] Sending teacher data:", JSON.stringify(teacher)); // ADD THIS LOG
       res.status(200).json(teacher);
     } catch (error) {
       console.error("Erro ao buscar professor:", error);

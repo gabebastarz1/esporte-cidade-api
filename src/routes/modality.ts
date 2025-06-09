@@ -61,12 +61,16 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 router.get(
-  "/:id/athletes-availible",
+  "/:id/athletes-available", // Corrected typo
   authenticate,
   async (req: Request, res: Response) => {
     const id_modality = parseInt(req.params.id, 10);
 
-    console.log("modalidade: " + req.params.id);
+    console.log("modalidade (req.params.id): " + req.params.id + ", parsed id_modality: " + id_modality);
+
+    if (isNaN(id_modality)) {
+      return res.status(400).json({ message: "ID da modalidade inválido." });
+    }
 
     // Primeiro buscamos os atletas ativos
     const athletes = await athleteRepository.find({

@@ -2,6 +2,8 @@ import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { AppDataSource } from "../database/config";
 
+import env from "../environment/env";
+
 import { Teacher } from "../entities/teacher.entity";
 import { Roles } from "../enums/roles.enum";
 import { Token } from "../entities/token.entity";
