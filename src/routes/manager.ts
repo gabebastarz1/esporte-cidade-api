@@ -1,13 +1,18 @@
 import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import PDFDocument from "pdfkit";
+
 import { AppDataSource } from "../database/config";
 import { Manager } from "../entities/manager.entity";
 import { Roles } from "../enums/roles.enum";
 import { Modality } from "../entities/modality.entity";
+import { Token } from "../entities/token.entity";
+import crypto from "crypto"
+import { PASSWORD_RESET_BODY_TEMPLATE, sendEmail } from "../services/email-service";
 
 const router = express.Router();
 const managerRepository = AppDataSource.getRepository(Manager);
+const tokenRepository = AppDataSource.getRepository(Token);
 const modalityRepository = AppDataSource.getRepository(Modality);
 
 // Função auxiliar para desenhar tabelas
@@ -488,6 +493,71 @@ router
     } catch (error) {
       console.error("Erro ao deletar gerente:", error);
       res.status(500).json("Erro ao deletar gerente.");
+    }
+  })
+  .post("/password-reset", async (req, res) => {
+    try {
+      if (!req.body.email) {
+        return res.status(400).send({ error: "The manager's e-mail is required" });
+      }
+
+      const manager = await managerRepository.findOneBy({ email: req.body.email });
+
+      if (!manager)
+        return res.status(400).send({ error: "A manager with the given e-mail doesn't exist" });
+
+      var token = await tokenRepository.findOne({
+        where: { manager: { id: manager.id } }
+      });
+
+      if (!token) {
+        token = tokenRepository.create({
+          manager: manager,
+          token: crypto.randomBytes(32).toString("hex"),
+        })
+
+        await tokenRepository.save(token);
+      }
+
+      const link = `${process.env.BASE_URL}/manager/password-reset/${manager.id}/${token.token}`;
+
+      let email_body = PASSWORD_RESET_BODY_TEMPLATE
+                          .replace("{{user_name}}", manager.name)
+                          .replace("{{reset_link}}", link);
+
+      await sendEmail(manager.email, "Password reset", email_body);
+
+      res.send({ message: "password reset link sent to your email account" });
+    } catch (error) {
+      res.send("An error occured");
+      console.log(error);
+    }
+  })
+  .post("/password-reset/:managerId/:token", async (req, res) => {
+    try {
+      const manager = await managerRepository.findOneBy({ id: Number(req.params.managerId) });
+
+      if (!manager) return res.status(400).send("invalid link or expired");
+
+      const token = await tokenRepository.findOne({
+        where: { 
+          manager: { id: manager.id }, 
+          token: req.params.token
+        },
+        relations: ["manager"]
+      })
+
+      if (!token) return res.status(400).send("Invalid link or expired");
+
+      manager.password = await bcrypt.hash(req.body.password, 10);
+
+      await managerRepository.save(manager);
+      await tokenRepository.delete(token);
+
+      res.send("password reset sucessfully.");
+    } catch (error) {
+      res.send("An error occured");
+      console.log(error);
     }
   });
 
