@@ -1,18 +1,13 @@
 import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import PDFDocument from "pdfkit";
-
 import { AppDataSource } from "../database/config";
 import { Manager } from "../entities/manager.entity";
 import { Roles } from "../enums/roles.enum";
 import { Modality } from "../entities/modality.entity";
-import { Token } from "../entities/token.entity";
-import crypto from "crypto"
-import { PASSWORD_RESET_BODY_TEMPLATE, sendEmail } from "../services/email-service";
 
 const router = express.Router();
 const managerRepository = AppDataSource.getRepository(Manager);
-const tokenRepository = AppDataSource.getRepository(Token);
 const modalityRepository = AppDataSource.getRepository(Modality);
 
 // Função auxiliar para desenhar tabelas
@@ -90,33 +85,31 @@ function drawTable(
   doc.y = startY + (table.rows.length + 1) * lineHeight + 15;
   doc.x = leftMargin;
 }
+
 router
   .get("/relatorio-geral-download", async (req: Request, res: Response) => {
     console.log("Gerando relatório completo com detalhamento mensal");
 
-    const active = true;
-
     // 1. Consulta para os totais gerais (funciona em SQLite)
     const report = await modalityRepository
       .createQueryBuilder("modality")
-      .where("modality.active = :active", { active })
-      .leftJoinAndSelect("modality.teachers", "teacher", "teacher.active = :active", { active })
+      .leftJoinAndSelect("modality.teachers", "teacher")
       .leftJoin(
         "modality.enrollments",
         "enrollment",
         "enrollment.approved = :approved AND enrollment.active = :active",
         {
           approved: true,
-          active,
+          active: true,
         }
       )
-      .leftJoin("enrollment.athlete", "athlete", "athlete.active = :active", { active })
-      .leftJoin("modality.atendiments", "atendiment", "atendiment.active = :active", { active })
+      .leftJoin("enrollment.athlete", "athlete")
+      .leftJoin("modality.atendiments", "atendiment")
       .leftJoin(
         "modality.atendiments",
         "atendiment_faltas",
-        "atendiment_faltas.present = :present AND atendiment_faltas.active = :active",
-        { present: false, active }
+        "atendiment_faltas.present = :present",
+        { present: false }
       )
       .select([
         "modality.id AS modality_id",
@@ -131,27 +124,26 @@ router
 
     console.log("Gerando relatório de detalhamento");
     // 2. Consulta para detalhamento mensal (adaptada para SQLite)
-      const monthlyDetails = await modalityRepository
+    const monthlyDetails = await modalityRepository
       .createQueryBuilder("modality")
-      .where("modality.active = :active", { active })
-      .leftJoin("modality.atendiments", "atendiment", "atendiment.active = :active", { active })
+      .leftJoin("modality.atendiments", "atendiment")
       .select([
         "modality.id AS modality_id",
         "strftime('%m', atendiment.created_at) AS month_number",
-        `CASE strftime('%m', atendiment.created_at)
-          WHEN '01' THEN 'Janeiro'
-          WHEN '02' THEN 'Fevereiro'
-          WHEN '03' THEN 'Março'
-          WHEN '04' THEN 'Abril'
-          WHEN '05' THEN 'Maio'
-          WHEN '06' THEN 'Junho'
-          WHEN '07' THEN 'Julho'
-          WHEN '08' THEN 'Agosto'
-          WHEN '09' THEN 'Setembro'
-          WHEN '10' THEN 'Outubro'
-          WHEN '11' THEN 'Novembro'
-          WHEN '12' THEN 'Dezembro'
-        END AS month_name`,
+        "CASE strftime('%m', atendiment.created_at) " +
+          "WHEN '01' THEN 'Janeiro' " +
+          "WHEN '02' THEN 'Fevereiro' " +
+          "WHEN '03' THEN 'Março' " +
+          "WHEN '04' THEN 'Abril' " +
+          "WHEN '05' THEN 'Maio' " +
+          "WHEN '06' THEN 'Junho' " +
+          "WHEN '07' THEN 'Julho' " +
+          "WHEN '08' THEN 'Agosto' " +
+          "WHEN '09' THEN 'Setembro' " +
+          "WHEN '10' THEN 'Outubro' " +
+          "WHEN '11' THEN 'Novembro' " +
+          "WHEN '12' THEN 'Dezembro' " +
+          "END AS month_name",
         "COUNT(DISTINCT date(atendiment.created_at)) AS dias_com_atendimento",
         "SUM(CASE WHEN atendiment.present = 1 THEN 1 ELSE 0 END) AS presencas",
         "SUM(CASE WHEN atendiment.present = 0 THEN 1 ELSE 0 END) AS faltas",
@@ -294,29 +286,26 @@ router
   .get("/relatorio-geral", async (req: Request, res: Response) => {
     console.log("Gerando relatório completo com detalhamento mensal");
 
-    const active = true;
-
-    // Mesmas alterações para o relatório sem download (JSON)
+    // 1. Consulta para os totais gerais (funciona em SQLite)
     const report = await modalityRepository
       .createQueryBuilder("modality")
-      .where("modality.active = :active", { active })
-      .leftJoinAndSelect("modality.teachers", "teacher", "teacher.active = :active", { active })
+      .leftJoinAndSelect("modality.teachers", "teacher")
       .leftJoin(
         "modality.enrollments",
         "enrollment",
         "enrollment.approved = :approved AND enrollment.active = :active",
         {
           approved: true,
-          active,
+          active: true,
         }
       )
-      .leftJoin("enrollment.athlete", "athlete", "athlete.active = :active", { active })
-      .leftJoin("modality.atendiments", "atendiment", "atendiment.active = :active", { active })
+      .leftJoin("enrollment.athlete", "athlete")
+      .leftJoin("modality.atendiments", "atendiment")
       .leftJoin(
         "modality.atendiments",
         "atendiment_faltas",
-        "atendiment_faltas.present = :present AND atendiment_faltas.active = :active",
-        { present: false, active }
+        "atendiment_faltas.present = :present",
+        { present: false }
       )
       .select([
         "modality.id AS modality_id",
@@ -329,27 +318,28 @@ router
       .groupBy("modality.id, teacher.id")
       .getRawMany();
 
+    console.log("Gerando relatório de detalhamento");
+    // 2. Consulta para detalhamento mensal (adaptada para SQLite)
     const monthlyDetails = await modalityRepository
       .createQueryBuilder("modality")
-      .where("modality.active = :active", { active })
-      .leftJoin("modality.atendiments", "atendiment", "atendiment.active = :active", { active })
+      .leftJoin("modality.atendiments", "atendiment")
       .select([
         "modality.id AS modality_id",
         "strftime('%m', atendiment.created_at) AS month_number",
-        `CASE strftime('%m', atendiment.created_at)
-          WHEN '01' THEN 'Janeiro'
-          WHEN '02' THEN 'Fevereiro'
-          WHEN '03' THEN 'Março'
-          WHEN '04' THEN 'Abril'
-          WHEN '05' THEN 'Maio'
-          WHEN '06' THEN 'Junho'
-          WHEN '07' THEN 'Julho'
-          WHEN '08' THEN 'Agosto'
-          WHEN '09' THEN 'Setembro'
-          WHEN '10' THEN 'Outubro'
-          WHEN '11' THEN 'Novembro'
-          WHEN '12' THEN 'Dezembro'
-        END AS month_name`,
+        "CASE strftime('%m', atendiment.created_at) " +
+          "WHEN '01' THEN 'Janeiro' " +
+          "WHEN '02' THEN 'Fevereiro' " +
+          "WHEN '03' THEN 'Março' " +
+          "WHEN '04' THEN 'Abril' " +
+          "WHEN '05' THEN 'Maio' " +
+          "WHEN '06' THEN 'Junho' " +
+          "WHEN '07' THEN 'Julho' " +
+          "WHEN '08' THEN 'Agosto' " +
+          "WHEN '09' THEN 'Setembro' " +
+          "WHEN '10' THEN 'Outubro' " +
+          "WHEN '11' THEN 'Novembro' " +
+          "WHEN '12' THEN 'Dezembro' " +
+          "END AS month_name",
         "COUNT(DISTINCT date(atendiment.created_at)) AS dias_com_atendimento",
         "SUM(CASE WHEN atendiment.present = 1 THEN 1 ELSE 0 END) AS presencas",
         "SUM(CASE WHEN atendiment.present = 0 THEN 1 ELSE 0 END) AS faltas",
@@ -499,71 +489,6 @@ router
     } catch (error) {
       console.error("Erro ao deletar gerente:", error);
       res.status(500).json("Erro ao deletar gerente.");
-    }
-  })
-  .post("/password-reset", async (req, res) => {
-    try {
-      if (!req.body.email) {
-        return res.status(400).send({ error: "The manager's e-mail is required" });
-      }
-
-      const manager = await managerRepository.findOneBy({ email: req.body.email });
-
-      if (!manager)
-        return res.status(400).send({ error: "A manager with the given e-mail doesn't exist" });
-
-      var token = await tokenRepository.findOne({
-        where: { manager: { id: manager.id } }
-      });
-
-      if (!token) {
-        token = tokenRepository.create({
-          manager: manager,
-          token: crypto.randomBytes(32).toString("hex"),
-        })
-
-        await tokenRepository.save(token);
-      }
-
-      const link = `${process.env.BASE_URL}/manager/password-reset/${manager.id}/${token.token}`;
-
-      let email_body = PASSWORD_RESET_BODY_TEMPLATE
-                          .replace("{{user_name}}", manager.name)
-                          .replace("{{reset_link}}", link);
-
-      await sendEmail(manager.email, "Password reset", email_body);
-
-      res.send({ message: "password reset link sent to your email account" });
-    } catch (error) {
-      res.send("An error occured");
-      console.log(error);
-    }
-  })
-  .post("/password-reset/:managerId/:token", async (req, res) => {
-    try {
-      const manager = await managerRepository.findOneBy({ id: Number(req.params.managerId) });
-
-      if (!manager) return res.status(400).send("invalid link or expired");
-
-      const token = await tokenRepository.findOne({
-        where: { 
-          manager: { id: manager.id }, 
-          token: req.params.token
-        },
-        relations: ["manager"]
-      })
-
-      if (!token) return res.status(400).send("Invalid link or expired");
-
-      manager.password = await bcrypt.hash(req.body.password, 10);
-
-      await managerRepository.save(manager);
-      await tokenRepository.delete(token);
-
-      res.send("password reset sucessfully.");
-    } catch (error) {
-      res.send("An error occured");
-      console.log(error);
     }
   });
 

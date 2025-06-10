@@ -6,7 +6,7 @@ import { Modality } from "../entities/modality.entity";
 import { Teacher } from "../entities/teacher.entity";
 import { authentication } from "../middleware/auth.middleware";
 import { timeToMinute } from "../utils/convertTime";
-import { Log } from "../utils/personalizedLogs.util"; // <-- Importando o logger
+import { Log } from "../utils/personalizedLogs.util"; 
 
 const router = express.Router();
 
