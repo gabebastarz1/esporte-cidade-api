@@ -42,6 +42,13 @@ export class AuthController {
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
+      // ADD THIS CONSOLE LOG:
+      console.log("Data being sent to frontend:", {
+        accessToken: result.data.accessToken,
+        user: result.data.user,
+      });
+      // END OF ADDED CONSOLE LOG
+
       res.json({
         accessToken: result.data.accessToken,
         user: result.data.user,

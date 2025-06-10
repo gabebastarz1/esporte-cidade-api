@@ -44,9 +44,9 @@ export const PASSWORD_RESET_BODY_TEMPLATE = `
   <table width="100%" cellspacing="0" cellpadding="0">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="20" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <table width="600" cellpadding="20" cellspacing="0" style="background-color: #ffffff; border-radius: 9px; border: 1px solid black; box-shadow: 5px 5px 0px 0px rgba(0, 0, 0, 1);">
           <tr>
-            <td align="center" style="background-color: #007B55; color: #ffffff; border-top-left-radius: 8px; border-top-right-radius: 8px;">
+            <td align="center" style="background-color: #EB8317; color: #ffffff; border-top-left-radius: 9px; border-top-right-radius: 9px;">
               <h1 style="margin: 0; padding: 20px;">Esporte na Cidade</h1>
             </td>
           </tr>
@@ -56,7 +56,7 @@ export const PASSWORD_RESET_BODY_TEMPLATE = `
               <p style="font-size: 16px;">Recebemos uma solicitação para redefinir a senha associada à sua conta.</p>
               <p style="font-size: 16px;">Clique no botão abaixo para criar uma nova senha:</p>
               <p style="text-align: center;">
-                <a href="{{reset_link}}" style="display: inline-block; background-color: #007B55; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-size: 16px;">Redefinir Senha</a>
+                <a href="{{reset_link}}" style="display: inline-block; background-color: #EB8317; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-size: 16px; border: 1px solid black;">Redefinir Senha</a>
               </p>
               <p style="font-size: 14px; color: #555;">Se você não solicitou a redefinição de senha, pode ignorar este e-mail com segurança.</p>
               <p style="font-size: 14px; color: #555;">Este link expirará em 1 hora por motivos de segurança.</p>

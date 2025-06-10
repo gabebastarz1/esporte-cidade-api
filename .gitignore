@@ -6,3 +6,4 @@ request/
 db.sqlite
 db.test.sqlite
 /public/uploads
+/database/config.ts
