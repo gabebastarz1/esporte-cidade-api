@@ -85,31 +85,33 @@ function drawTable(
   doc.y = startY + (table.rows.length + 1) * lineHeight + 15;
   doc.x = leftMargin;
 }
-
 router
   .get("/relatorio-geral-download", async (req: Request, res: Response) => {
     console.log("Gerando relatório completo com detalhamento mensal");
 
+    const active = true;
+
     // 1. Consulta para os totais gerais (funciona em SQLite)
     const report = await modalityRepository
       .createQueryBuilder("modality")
-      .leftJoinAndSelect("modality.teachers", "teacher")
+      .where("modality.active = :active", { active })
+      .leftJoinAndSelect("modality.teachers", "teacher", "teacher.active = :active", { active })
       .leftJoin(
         "modality.enrollments",
         "enrollment",
         "enrollment.approved = :approved AND enrollment.active = :active",
         {
           approved: true,
-          active: true,
+          active,
         }
       )
-      .leftJoin("enrollment.athlete", "athlete")
-      .leftJoin("modality.atendiments", "atendiment")
+      .leftJoin("enrollment.athlete", "athlete", "athlete.active = :active", { active })
+      .leftJoin("modality.atendiments", "atendiment", "atendiment.active = :active", { active })
       .leftJoin(
         "modality.atendiments",
         "atendiment_faltas",
-        "atendiment_faltas.present = :present",
-        { present: false }
+        "atendiment_faltas.present = :present AND atendiment_faltas.active = :active",
+        { present: false, active }
       )
       .select([
         "modality.id AS modality_id",
@@ -124,26 +126,27 @@ router
 
     console.log("Gerando relatório de detalhamento");
     // 2. Consulta para detalhamento mensal (adaptada para SQLite)
-    const monthlyDetails = await modalityRepository
+      const monthlyDetails = await modalityRepository
       .createQueryBuilder("modality")
-      .leftJoin("modality.atendiments", "atendiment")
+      .where("modality.active = :active", { active })
+      .leftJoin("modality.atendiments", "atendiment", "atendiment.active = :active", { active })
       .select([
         "modality.id AS modality_id",
         "strftime('%m', atendiment.created_at) AS month_number",
-        "CASE strftime('%m', atendiment.created_at) " +
-          "WHEN '01' THEN 'Janeiro' " +
-          "WHEN '02' THEN 'Fevereiro' " +
-          "WHEN '03' THEN 'Março' " +
-          "WHEN '04' THEN 'Abril' " +
-          "WHEN '05' THEN 'Maio' " +
-          "WHEN '06' THEN 'Junho' " +
-          "WHEN '07' THEN 'Julho' " +
-          "WHEN '08' THEN 'Agosto' " +
-          "WHEN '09' THEN 'Setembro' " +
-          "WHEN '10' THEN 'Outubro' " +
-          "WHEN '11' THEN 'Novembro' " +
-          "WHEN '12' THEN 'Dezembro' " +
-          "END AS month_name",
+        `CASE strftime('%m', atendiment.created_at)
+          WHEN '01' THEN 'Janeiro'
+          WHEN '02' THEN 'Fevereiro'
+          WHEN '03' THEN 'Março'
+          WHEN '04' THEN 'Abril'
+          WHEN '05' THEN 'Maio'
+          WHEN '06' THEN 'Junho'
+          WHEN '07' THEN 'Julho'
+          WHEN '08' THEN 'Agosto'
+          WHEN '09' THEN 'Setembro'
+          WHEN '10' THEN 'Outubro'
+          WHEN '11' THEN 'Novembro'
+          WHEN '12' THEN 'Dezembro'
+        END AS month_name`,
         "COUNT(DISTINCT date(atendiment.created_at)) AS dias_com_atendimento",
         "SUM(CASE WHEN atendiment.present = 1 THEN 1 ELSE 0 END) AS presencas",
         "SUM(CASE WHEN atendiment.present = 0 THEN 1 ELSE 0 END) AS faltas",
@@ -286,26 +289,29 @@ router
   .get("/relatorio-geral", async (req: Request, res: Response) => {
     console.log("Gerando relatório completo com detalhamento mensal");
 
-    // 1. Consulta para os totais gerais (funciona em SQLite)
+    const active = true;
+
+    // Mesmas alterações para o relatório sem download (JSON)
     const report = await modalityRepository
       .createQueryBuilder("modality")
-      .leftJoinAndSelect("modality.teachers", "teacher")
+      .where("modality.active = :active", { active })
+      .leftJoinAndSelect("modality.teachers", "teacher", "teacher.active = :active", { active })
       .leftJoin(
         "modality.enrollments",
         "enrollment",
         "enrollment.approved = :approved AND enrollment.active = :active",
         {
           approved: true,
-          active: true,
+          active,
         }
       )
-      .leftJoin("enrollment.athlete", "athlete")
-      .leftJoin("modality.atendiments", "atendiment")
+      .leftJoin("enrollment.athlete", "athlete", "athlete.active = :active", { active })
+      .leftJoin("modality.atendiments", "atendiment", "atendiment.active = :active", { active })
       .leftJoin(
         "modality.atendiments",
         "atendiment_faltas",
-        "atendiment_faltas.present = :present",
-        { present: false }
+        "atendiment_faltas.present = :present AND atendiment_faltas.active = :active",
+        { present: false, active }
       )
       .select([
         "modality.id AS modality_id",
@@ -318,28 +324,27 @@ router
       .groupBy("modality.id, teacher.id")
       .getRawMany();
 
-    console.log("Gerando relatório de detalhamento");
-    // 2. Consulta para detalhamento mensal (adaptada para SQLite)
     const monthlyDetails = await modalityRepository
       .createQueryBuilder("modality")
-      .leftJoin("modality.atendiments", "atendiment")
+      .where("modality.active = :active", { active })
+      .leftJoin("modality.atendiments", "atendiment", "atendiment.active = :active", { active })
       .select([
         "modality.id AS modality_id",
         "strftime('%m', atendiment.created_at) AS month_number",
-        "CASE strftime('%m', atendiment.created_at) " +
-          "WHEN '01' THEN 'Janeiro' " +
-          "WHEN '02' THEN 'Fevereiro' " +
-          "WHEN '03' THEN 'Março' " +
-          "WHEN '04' THEN 'Abril' " +
-          "WHEN '05' THEN 'Maio' " +
-          "WHEN '06' THEN 'Junho' " +
-          "WHEN '07' THEN 'Julho' " +
-          "WHEN '08' THEN 'Agosto' " +
-          "WHEN '09' THEN 'Setembro' " +
-          "WHEN '10' THEN 'Outubro' " +
-          "WHEN '11' THEN 'Novembro' " +
-          "WHEN '12' THEN 'Dezembro' " +
-          "END AS month_name",
+        `CASE strftime('%m', atendiment.created_at)
+          WHEN '01' THEN 'Janeiro'
+          WHEN '02' THEN 'Fevereiro'
+          WHEN '03' THEN 'Março'
+          WHEN '04' THEN 'Abril'
+          WHEN '05' THEN 'Maio'
+          WHEN '06' THEN 'Junho'
+          WHEN '07' THEN 'Julho'
+          WHEN '08' THEN 'Agosto'
+          WHEN '09' THEN 'Setembro'
+          WHEN '10' THEN 'Outubro'
+          WHEN '11' THEN 'Novembro'
+          WHEN '12' THEN 'Dezembro'
+        END AS month_name`,
         "COUNT(DISTINCT date(atendiment.created_at)) AS dias_com_atendimento",
         "SUM(CASE WHEN atendiment.present = 1 THEN 1 ELSE 0 END) AS presencas",
         "SUM(CASE WHEN atendiment.present = 0 THEN 1 ELSE 0 END) AS faltas",
@@ -483,7 +488,8 @@ router
         return res.status(404).json("Gerente não encontrado.");
       }
 
-      await managerRepository.remove(manager);
+      manager.active = false;
+      await managerRepository.save(manager);
       res.status(200).json("Gerente deletado com sucesso.");
     } catch (error) {
       console.error("Erro ao deletar gerente:", error);

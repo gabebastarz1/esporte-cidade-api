@@ -6,8 +6,11 @@ import { Teacher } from "../entities/teacher.entity";
 import { Roles } from "../enums/roles.enum";
 import { Token } from "../entities/token.entity";
 
-import crypto from "crypto"
-import { PASSWORD_RESET_BODY_TEMPLATE, sendEmail } from "../services/email-service";
+import crypto from "crypto";
+import {
+  PASSWORD_RESET_BODY_TEMPLATE,
+  sendEmail,
+} from "../services/email-service";
 
 const router = express.Router();
 const teacherRepository = AppDataSource.getRepository(Teacher);
@@ -17,6 +20,7 @@ router
   .get("/", async (req: Request, res: Response) => {
     try {
       const teachers = await teacherRepository.find({
+        where: { active: true },
         relations: ["modality"],
       });
 
@@ -40,6 +44,7 @@ router
       const teacher = await teacherRepository.find({
         where: {
           id: teacherId,
+          active: true,
         },
         relations: ["modality"],
       });
@@ -74,32 +79,44 @@ router
   .post("/password-reset", async (req, res) => {
     try {
       if (!req.body.email) {
-        return res.status(400).send({ error: "The teacher's e-mail is required" });
+        return res
+          .status(400)
+          .send({ error: "The teacher's e-mail is required" });
       }
 
-      const teacher = await teacherRepository.findOneBy({ email: req.body.email });
+      const teacher = await teacherRepository.findOne({
+        where: {
+          email: req.body.email,
+          active: true,
+        }
+      });
 
       if (!teacher)
-        return res.status(400).send({ error: "A teacher with the given e-mail doesn't exist" });
+        return res
+          .status(400)
+          .send({ error: "A teacher with the given e-mail doesn't exist" });
 
       var token = await tokenRepository.findOne({
-        where: { teacher: { id: teacher.id } }
+        where: {
+          teacher: { id: teacher.id },
+        },
       });
 
       if (!token) {
         token = tokenRepository.create({
           teacher: teacher,
           token: crypto.randomBytes(32).toString("hex"),
-        })
+        });
 
         await tokenRepository.save(token);
       }
 
       const link = `${process.env.BASE_URL}/password-reset/${teacher.id}/${token.token}`;
 
-      let email_body = PASSWORD_RESET_BODY_TEMPLATE
-                          .replace("{{user_name}}", teacher.name)
-                          .replace("{{reset_link}}", link);
+      let email_body = PASSWORD_RESET_BODY_TEMPLATE.replace(
+        "{{user_name}}",
+        teacher.name
+      ).replace("{{reset_link}}", link);
 
       await sendEmail(teacher.email, "Password reset", email_body);
 
@@ -111,16 +128,21 @@ router
   })
   .post("/password-reset/:teacherId/:token", async (req, res) => {
     try {
-      const teacher = await teacherRepository.findOneBy({ id: Number(req.params.teacherId) });
+      const teacher = await teacherRepository.findOne({
+        where:{
+        id: Number(req.params.teacherId),
+        active: true
+        }
+      });
       if (!teacher) return res.status(400).send("invalid link or expired");
 
       const token = await tokenRepository.findOne({
-        where: { 
-          teacher: { id: teacher.id }, 
-          token: req.params.token
+        where: {
+          teacher: { id: teacher.id },
+          token: req.params.token,
         },
-        relations: ["teacher"]
-      })
+        relations: ["teacher"],
+      });
 
       if (!token) return res.status(400).send("Invalid link or expired");
 
@@ -143,7 +165,12 @@ router
         return res.status(400).json("ID de professor inválido.");
       }
 
-      const teacher = await teacherRepository.findOneBy({ id: teacherId });
+      const teacher = await teacherRepository.findOne({ 
+        where:{
+        id: teacherId,
+        active: true 
+      }
+      })
       if (!teacher) {
         return res.status(404).json("Professor não encontrado.");
       }
@@ -180,7 +207,8 @@ router
         return res.status(404).json("Professor não encontrado.");
       }
 
-      await teacherRepository.remove(teacher);
+      teacher.active = false;
+      await teacherRepository.save(teacher);
       res.status(200).json("Professor deletado com sucesso.");
     } catch (error) {
       console.error("Erro ao deletar professor:", error);

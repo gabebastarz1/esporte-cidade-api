@@ -10,7 +10,7 @@ const teacherRepository = AppDataSource.getRepository(Teacher);
 export const modalityService = {
   async viewModality() {
     const modalities = await modalityRepository.find({
-      where: { ativo: true },
+      where: { active: true },
       relations: ["teachers"],
     });
 
@@ -19,7 +19,7 @@ export const modalityService = {
 
   async viewModalityById(id: number) {
     const modality = await modalityRepository.findOne({
-      where: { id, ativo: true },
+      where: { id, active: true }, 
       relations: ["teachers"],
     });
 
@@ -111,7 +111,7 @@ export const modalityService = {
       throw error;
     }
 
-    modality.ativo = false;
+    modality.active = false;
     await modalityRepository.save(modality);
 
     return { message: "Modalidade desativada com sucesso" };

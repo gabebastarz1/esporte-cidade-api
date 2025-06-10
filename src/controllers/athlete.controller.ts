@@ -10,7 +10,7 @@ const addressRepository = AppDataSource.getRepository(Address);
 export class AthleteController {
   static async getAll(req: Request, res: Response) {
     try {
-      const athletes = await athleteRepository.find();
+      const athletes = await athleteRepository.find({where: {active: true}});
       res.status(200).json(athletes);
     } catch (error) {
       console.error("Erro ao buscar atletas:", error);
@@ -27,7 +27,7 @@ export class AthleteController {
 
       // Busca o atleta incluindo o endereço
       const athlete = await athleteRepository.findOne({
-        where: { id },
+        where: { id, active: true },
         relations: ["address"]
       });
       if (!athlete) {
@@ -68,7 +68,7 @@ const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
       // Busque o atleta já com o address
       const athlete = await athleteRepository.findOne({
-        where: { id },
+        where: { id, active: true },
         relations: ["address"]
       });
       if (!athlete) {
@@ -101,7 +101,7 @@ const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
       // Recarregue o atleta com address
       const updatedAthlete = await athleteRepository.findOne({
-        where: { id },
+        where: { id, active: true },
         relations: ["address"]
       });
 
@@ -124,7 +124,8 @@ const hashedPassword = await bcrypt.hash(req.body.password, 10);
         return res.status(404).json({ message: "Atleta não encontrado." });
       }
 
-      await athleteRepository.remove(athlete);
+      athlete.active = false;
+      await athleteRepository.save(athlete);
       res.status(200).json({ message: "Atleta deletado com sucesso." });
     } catch (error) {
       console.error("Erro ao deletar atleta:", error);

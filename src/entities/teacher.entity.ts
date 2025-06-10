@@ -7,7 +7,7 @@ import { Token } from "./token.entity";
 export class Teacher extends UserBase {
     @Column("text")
     about: string;
-
+    
     @ManyToOne(() => Modality, (modality) => modality.teachers, { onDelete: "SET NULL" })
     modality: Modality;
 

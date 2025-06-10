@@ -14,7 +14,7 @@ export class Modality {
   id: number;
 
   @Column({default:true})
-  ativo:boolean;
+  active:boolean;
 
   @Column("text")
   name: string;

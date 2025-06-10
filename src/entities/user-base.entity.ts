@@ -7,9 +7,13 @@ import {
 } from "typeorm";
 import { Address } from "./address.entity";
 import { Roles } from "../enums/roles.enum";
+import { boolean } from "zod";
 
 @Entity("user-base")
 export abstract class UserBase {
+  @Column({default:true})
+  active: boolean;
+
   @PrimaryGeneratedColumn()
   id: number;
 
