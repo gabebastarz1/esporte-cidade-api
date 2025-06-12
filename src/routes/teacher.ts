@@ -13,6 +13,7 @@ import {
   PASSWORD_RESET_BODY_TEMPLATE,
   sendEmail,
 } from "../services/email-service";
+import { isPasswordValid } from "../utils/isPasswordValid";
 
 const router = express.Router();
 const teacherRepository = AppDataSource.getRepository(Teacher);
@@ -130,6 +131,12 @@ router
   })
   .post("/password-reset/:teacherId/:token", async (req, res) => {
     try {
+      if (!isPasswordValid(req.body.password))
+      {
+        res.status(400).send("Password must have at least 8 characters. At least 1 uppercase and 1 lowercase letter. At least one digit. At least one special character");
+        return;
+      }
+
       const teacher = await teacherRepository.findOne({
         where:{
         id: Number(req.params.teacherId),

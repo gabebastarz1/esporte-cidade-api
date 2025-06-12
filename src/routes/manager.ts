@@ -1,14 +1,20 @@
 import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import PDFDocument from "pdfkit";
+import crypto from "crypto"
 import { AppDataSource } from "../database/config";
 import { Manager } from "../entities/manager.entity";
 import { Roles } from "../enums/roles.enum";
 import { Modality } from "../entities/modality.entity";
 
+import { Token } from "../entities/token.entity";
+import { PASSWORD_RESET_BODY_TEMPLATE, sendEmail } from "../services/email-service";
+import { isPasswordValid } from "../utils/isPasswordValid";
+
 const router = express.Router();
 const managerRepository = AppDataSource.getRepository(Manager);
 const modalityRepository = AppDataSource.getRepository(Modality);
+const tokenRepository = AppDataSource.getRepository(Token);
 
 // Função auxiliar para desenhar tabelas
 function drawTable(
@@ -131,19 +137,19 @@ router
         "modality.id AS modality_id",
         "strftime('%m', atendiment.created_at) AS month_number",
         "CASE strftime('%m', atendiment.created_at) " +
-          "WHEN '01' THEN 'Janeiro' " +
-          "WHEN '02' THEN 'Fevereiro' " +
-          "WHEN '03' THEN 'Março' " +
-          "WHEN '04' THEN 'Abril' " +
-          "WHEN '05' THEN 'Maio' " +
-          "WHEN '06' THEN 'Junho' " +
-          "WHEN '07' THEN 'Julho' " +
-          "WHEN '08' THEN 'Agosto' " +
-          "WHEN '09' THEN 'Setembro' " +
-          "WHEN '10' THEN 'Outubro' " +
-          "WHEN '11' THEN 'Novembro' " +
-          "WHEN '12' THEN 'Dezembro' " +
-          "END AS month_name",
+        "WHEN '01' THEN 'Janeiro' " +
+        "WHEN '02' THEN 'Fevereiro' " +
+        "WHEN '03' THEN 'Março' " +
+        "WHEN '04' THEN 'Abril' " +
+        "WHEN '05' THEN 'Maio' " +
+        "WHEN '06' THEN 'Junho' " +
+        "WHEN '07' THEN 'Julho' " +
+        "WHEN '08' THEN 'Agosto' " +
+        "WHEN '09' THEN 'Setembro' " +
+        "WHEN '10' THEN 'Outubro' " +
+        "WHEN '11' THEN 'Novembro' " +
+        "WHEN '12' THEN 'Dezembro' " +
+        "END AS month_name",
         "COUNT(DISTINCT date(atendiment.created_at)) AS dias_com_atendimento",
         "SUM(CASE WHEN atendiment.present = 1 THEN 1 ELSE 0 END) AS presencas",
         "SUM(CASE WHEN atendiment.present = 0 THEN 1 ELSE 0 END) AS faltas",
@@ -327,19 +333,19 @@ router
         "modality.id AS modality_id",
         "strftime('%m', atendiment.created_at) AS month_number",
         "CASE strftime('%m', atendiment.created_at) " +
-          "WHEN '01' THEN 'Janeiro' " +
-          "WHEN '02' THEN 'Fevereiro' " +
-          "WHEN '03' THEN 'Março' " +
-          "WHEN '04' THEN 'Abril' " +
-          "WHEN '05' THEN 'Maio' " +
-          "WHEN '06' THEN 'Junho' " +
-          "WHEN '07' THEN 'Julho' " +
-          "WHEN '08' THEN 'Agosto' " +
-          "WHEN '09' THEN 'Setembro' " +
-          "WHEN '10' THEN 'Outubro' " +
-          "WHEN '11' THEN 'Novembro' " +
-          "WHEN '12' THEN 'Dezembro' " +
-          "END AS month_name",
+        "WHEN '01' THEN 'Janeiro' " +
+        "WHEN '02' THEN 'Fevereiro' " +
+        "WHEN '03' THEN 'Março' " +
+        "WHEN '04' THEN 'Abril' " +
+        "WHEN '05' THEN 'Maio' " +
+        "WHEN '06' THEN 'Junho' " +
+        "WHEN '07' THEN 'Julho' " +
+        "WHEN '08' THEN 'Agosto' " +
+        "WHEN '09' THEN 'Setembro' " +
+        "WHEN '10' THEN 'Outubro' " +
+        "WHEN '11' THEN 'Novembro' " +
+        "WHEN '12' THEN 'Dezembro' " +
+        "END AS month_name",
         "COUNT(DISTINCT date(atendiment.created_at)) AS dias_com_atendimento",
         "SUM(CASE WHEN atendiment.present = 1 THEN 1 ELSE 0 END) AS presencas",
         "SUM(CASE WHEN atendiment.present = 0 THEN 1 ELSE 0 END) AS faltas",
@@ -489,6 +495,77 @@ router
     } catch (error) {
       console.error("Erro ao deletar gerente:", error);
       res.status(500).json("Erro ao deletar gerente.");
+    }
+  })
+  .post("/password-reset", async (req, res) => {
+    try {
+      if (!req.body.email) {
+        return res.status(400).send({ error: "The manager's e-mail is required" });
+      }
+
+      const manager = await managerRepository.findOneBy({ email: req.body.email });
+
+      if (!manager)
+        return res.status(400).send({ error: "A manager with the given e-mail doesn't exist" });
+
+      var token = await tokenRepository.findOne({
+        where: { manager: { id: manager.id } }
+      });
+
+      if (!token) {
+        token = tokenRepository.create({
+          manager: manager,
+          token: crypto.randomBytes(32).toString("hex"),
+        })
+
+        await tokenRepository.save(token);
+      }
+
+      const link = `${process.env.BASE_URL}/manager/password-reset/${manager.id}/${token.token}`;
+
+      let email_body = PASSWORD_RESET_BODY_TEMPLATE
+        .replace("{{user_name}}", manager.name)
+        .replace("{{reset_link}}", link);
+
+      await sendEmail(manager.email, "Password reset", email_body);
+
+      res.send({ message: "password reset link sent to your email account" });
+    } catch (error) {
+      res.send("An error occured");
+      console.log(error);
+    }
+  })
+  .post("/password-reset/:managerId/:token", async (req, res) => {
+    try {
+      if (!isPasswordValid(req.body.password)) 
+      {
+        res.status(400).send("Password must have at least 8 characters. At least 1 uppercase and 1 lowercase letter. At least one digit. At least one special character");
+        return;
+      }
+
+      const manager = await managerRepository.findOneBy({ id: Number(req.params.managerId) });
+
+      if (!manager) return res.status(400).send("invalid link or expired");
+
+      const token = await tokenRepository.findOne({
+        where: {
+          manager: { id: manager.id },
+          token: req.params.token
+        },
+        relations: ["manager"]
+      })
+
+      if (!token) return res.status(400).send("Invalid link or expired");
+
+      manager.password = await bcrypt.hash(req.body.password, 10);
+
+      await managerRepository.save(manager);
+      await tokenRepository.delete(token);
+
+      res.send("password reset sucessfully.");
+    } catch (error) {
+      res.send("An error occured");
+      console.log(error);
     }
   });
 
