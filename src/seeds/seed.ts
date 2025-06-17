@@ -104,7 +104,7 @@ export const seedOfAllEntities = async () => {
   }
 
     var athlete1 = new Athlete();
-    athlete1.name = faker.person.fullName();
+    athlete1.name = "Roberto Atleta";
     athlete1.email = "teste@gmail.com"
     athlete1.password = await bcrypt.hash("senha12345",10)
     athlete1.phone = faker.phone.number({ style: "national" });
@@ -359,7 +359,7 @@ export const seedOfAllEntities = async () => {
 
   teacherDemo.email = "teste@gmail.com";
   teacherDemo.password = await bcrypt.hash(`senha12345`, 10);
-  teacherDemo.name = faker.person.fullName();
+  teacherDemo.name = "Josias Pofessor";
   teacherDemo.cpf = faker.string.numeric(11); // Gera CPF sem formatação
   teacherDemo.rg = faker.string.numeric(9);
   teacherDemo.birthday = faker.date
@@ -479,7 +479,7 @@ export const seedOfAllEntities = async () => {
   const managerDemo = new Manager();
 
     // Dados de UserBase
-    managerDemo.name = faker.person.fullName();
+    managerDemo.name = "Horácio Gerente";
     managerDemo.email = "teste@gmail.com"
     managerDemo.cpf = faker.string.numeric(11); // CPF sem formatação
     managerDemo.rg = faker.string.numeric(9);
