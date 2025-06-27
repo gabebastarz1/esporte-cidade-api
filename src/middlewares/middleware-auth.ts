@@ -28,7 +28,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       id: number;
       role: string;
       type: string;
-    };
+    };' "'
 
     switch (decoded.type) {
       case 'athlete':
