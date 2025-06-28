@@ -21,8 +21,8 @@ export const AppDataSource = new DataSource({
 
 AppDataSource.initialize()
   .then(async () => {
-    await AppDataSource.runMigrations();
-    await resetAndSeedDatabase();
+  //  await AppDataSource.runMigrations();
+  // await resetAndSeedDatabase();
 
   })
   .catch((error) => {

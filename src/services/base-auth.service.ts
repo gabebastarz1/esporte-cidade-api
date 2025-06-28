@@ -54,7 +54,7 @@ export abstract class BaseAuthService<T> {
         user.password
       );
       if (!passwordMatch)
-        return this.failResponse("usuário ou senha incorreta");
+        return this.failResponse("Usuário ou senha incorretos");
 
       const tokens = this.generateTokens(user);
       return this.successResponse(user, tokens);

@@ -99,12 +99,12 @@ router.post("/password", async (req, res) => {
       });
     }
 
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/;
 
     if (!passwordRegex.test(password)) {
       return res.status(400).json({
         valid: false,
-        message: "A senha deve ter no mínimo 6 caracteres, contendo pelo menos uma letra e um número.",
+        message: "A senha deve ter no mínimo 6 caracteres, contendo pelo menos uma letra minúscula, uma letra maiúscula, um número e um caractere especial.",
       });
     }
 
