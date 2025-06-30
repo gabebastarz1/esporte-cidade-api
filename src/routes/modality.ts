@@ -40,6 +40,7 @@ export const AtendimentSchema = z.object({
   athleteId: z.number().positive(),
   present: z.boolean(),
   created_at: z.string().regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}$/),
+  description: z.string().optional().nullable(),
 });
 
 router.get("/all", viewModalities);
@@ -173,6 +174,7 @@ router.post("/:id/receive-atendiments", async (req: Request, res: Response) => {
             (a.created_at ? new Date(a.created_at) : new Date()).getTime() -
               3 * 60 * 60 * 1000
           ),
+          description: a.description ?? null,
         }))
       )
       .execute();
