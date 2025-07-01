@@ -7,6 +7,7 @@ import env from "../environment/env";
 import { Teacher } from "../entities/teacher.entity";
 import { Roles } from "../enums/roles.enum";
 import { Token } from "../entities/token.entity";
+import { TeacherController } from "../controllers/teacher.controller";
 
 import crypto from "crypto";
 import {
@@ -166,43 +167,7 @@ router
       console.log(error);
     }
   })
-  .put("/:id", async (req: Request, res: Response): Promise<any> => {
-    try {
-      const teacherId = parseInt(req.params.id, 10);
-
-      if (isNaN(teacherId)) {
-        return res.status(400).json("ID de professor inválido.");
-      }
-
-      const teacher = await teacherRepository.findOne({ 
-        where:{
-        id: teacherId,
-        active: true 
-      }
-      })
-      if (!teacher) {
-        return res.status(404).json("Professor não encontrado.");
-      }
-
-      teacher.name = req.body.name || teacher.name;
-      teacher.cpf = req.body.cpf || teacher.cpf;
-      teacher.rg = req.body.rg || teacher.rg;
-      teacher.birthday = req.body.birthday || teacher.birthday;
-      teacher.phone = req.body.phone || teacher.phone;
-      teacher.photo_url = req.body.photo_url || teacher.photo_url;
-      teacher.email = req.body.email || teacher.email;
-
-      if (req.body.password) {
-        teacher.password = await bcrypt.hash(req.body.password, 10); // Criptografando a nova senha
-      }
-
-      await teacherRepository.save(teacher);
-      res.status(200).json(teacher);
-    } catch (error) {
-      console.error("Erro ao atualizar professor:", error);
-      res.status(500).json("Erro ao atualizar professor.");
-    }
-  })
+  .put("/:id", TeacherController.update)
   .delete("/:id", async (req: Request, res: Response): Promise<any> => {
     try {
       const teacherId = parseInt(req.params.id, 10);
