@@ -415,6 +415,170 @@ router
     });
 
     return res.json(formattedReport);
+  });
+
+//grafico
+router.get("/relatorio-graficos", async (req: Request, res: Response) => {
+  try {
+    const atendimentosPorMes = await modalityRepository
+      .createQueryBuilder("modality")
+      .select([
+        "strftime('%m', atendiment.created_at) AS month_number",
+        "CASE strftime('%m', atendiment.created_at) " +
+          "WHEN '01' THEN 'Janeiro' " +
+          "WHEN '02' THEN 'Fevereiro' " +
+          "WHEN '03' THEN 'Março' " +
+          "WHEN '04' THEN 'Abril' " +
+          "WHEN '05' THEN 'Maio' " +
+          "WHEN '06' THEN 'Junho' " +
+          "WHEN '07' THEN 'Julho' " +
+          "WHEN '08' THEN 'Agosto' " +
+          "WHEN '09' THEN 'Setembro' " +
+          "WHEN '10' THEN 'Outubro' " +
+          "WHEN '11' THEN 'Novembro' " +
+          "WHEN '12' THEN 'Dezembro' " +
+          "END AS month_name",
+        "COUNT(DISTINCT date(atendiment.created_at)) AS total_atendimentos",
+      ])
+      .leftJoin("modality.atendiments", "atendiment")
+      .groupBy("month_number")
+      .orderBy("month_number")
+      .getRawMany();
+
+    const atendimentosPorModalidade = await modalityRepository
+      .createQueryBuilder("modality")
+      .select([
+        "modality.id AS modality_id",
+        "modality.name AS modality_name",
+        "COUNT(DISTINCT date(atendiment.created_at)) AS total_atendimentos",
+      ])
+      .leftJoin("modality.atendiments", "atendiment")
+      .groupBy("modality.id")
+      .orderBy("total_atendimentos", "DESC")
+      .getRawMany();
+
+    const presencasFaltas = await modalityRepository
+      .createQueryBuilder("modality")
+      .select([
+        "SUM(CASE WHEN atendiment.present = 1 THEN 1 ELSE 0 END) AS total_presencas",
+        "SUM(CASE WHEN atendiment.present = 0 THEN 1 ELSE 0 END) AS total_faltas",
+      ])
+      .leftJoin("modality.atendiments", "atendiment")
+      .getRawOne();
+
+    const graphData = {
+      atendimentosPorMes: atendimentosPorMes.map(item => ({
+        month: item.month_name,
+        total: item.total_atendimentos
+      })),
+
+      atendimentosPorModalidade: atendimentosPorModalidade.map(item => ({
+        modality: item.modality_name,
+        total: item.total_atendimentos
+      })),
+      presencasFaltas: {
+        presencas: presencasFaltas.total_presencas,
+        faltas: presencasFaltas.total_faltas,
+        taxa_presenca: presencasFaltas.total_presencas > 0 
+          ? ((presencasFaltas.total_presencas / (presencasFaltas.total_presencas + presencasFaltas.total_faltas)) * 100).toFixed(2)
+          : 0
+      }
+    };
+
+    return res.json(graphData);
+  } catch (error) {
+    console.error("Error generating graph data:", error);
+    return res.status(500).json({ error: "Failed to generate graph data" });
+  }
+})
+
+router
+  .get("/relatorio-graficos", async (req: Request, res: Response) => {
+    try {
+      // 1. Get total atendiments by month (for bar graph)
+      const atendimentosPorMes = await modalityRepository
+        .createQueryBuilder("modality")
+        .select([
+          "strftime('%m', atendiment.created_at) AS month_number",
+          "CASE strftime('%m', atendiment.created_at) " +
+            "WHEN '01' THEN 'Janeiro' " +
+            "WHEN '02' THEN 'Fevereiro' " +
+            "WHEN '03' THEN 'Março' " +
+            "WHEN '04' THEN 'Abril' " +
+            "WHEN '05' THEN 'Maio' " +
+            "WHEN '06' THEN 'Junho' " +
+            "WHEN '07' THEN 'Julho' " +
+            "WHEN '08' THEN 'Agosto' " +
+            "WHEN '09' THEN 'Setembro' " +
+            "WHEN '10' THEN 'Outubro' " +
+            "WHEN '11' THEN 'Novembro' " +
+            "WHEN '12' THEN 'Dezembro' " +
+            "END AS month_name",
+          "COUNT(DISTINCT date(atendiment.created_at)) AS total_atendimentos",
+        ])
+        .leftJoin("modality.atendiments", "atendiment")
+        .groupBy("month_number")
+        .orderBy("month_number")
+        .getRawMany();
+
+      // 2. Get total atendiments by modality (for bar graph)
+      const atendimentosPorModalidade = await modalityRepository
+        .createQueryBuilder("modality")
+        .select([
+          "modality.id AS modality_id",
+          "modality.name AS modality_name",
+          "COUNT(DISTINCT date(atendiment.created_at)) AS total_atendimentos",
+        ])
+        .leftJoin("modality.atendiments", "atendiment")
+        .groupBy("modality.id")
+        .orderBy("total_atendimentos", "DESC")
+        .getRawMany();
+
+      // 3. Get presence/absence data (for pie chart)
+      const presencasFaltas = await modalityRepository
+        .createQueryBuilder("modality")
+        .select([
+          "SUM(CASE WHEN atendiment.present = 1 THEN 1 ELSE 0 END) AS total_presencas",
+          "SUM(CASE WHEN atendiment.present = 0 THEN 1 ELSE 0 END) AS total_faltas",
+        ])
+        .leftJoin("modality.atendiments", "atendiment")
+        .getRawOne();
+
+      // Format the data for front-end consumption
+      const graphData = {
+        // For monthly atendiments bar chart
+        atendimentosPorMes: atendimentosPorMes.map((item) => ({
+          month: item.month_name,
+          total: item.total_atendimentos,
+        })),
+
+        // For modality atendiments bar chart
+        atendimentosPorModalidade: atendimentosPorModalidade.map((item) => ({
+          modality: item.modality_name,
+          total: item.total_atendimentos,
+        })),
+
+        // For presence/absence pie chart
+        presencasFaltas: {
+          presencas: presencasFaltas.total_presencas,
+          faltas: presencasFaltas.total_faltas,
+          taxa_presenca:
+            presencasFaltas.total_presencas > 0
+              ? (
+                  (presencasFaltas.total_presencas /
+                    (presencasFaltas.total_presencas +
+                      presencasFaltas.total_faltas)) *
+                  100
+                ).toFixed(2)
+              : 0,
+        },
+      };
+
+      return res.json(graphData);
+    } catch (error) {
+      console.error("Error generating graph data:", error);
+      return res.status(500).json({ error: "Failed to generate graph data" });
+    }
   })
   .get("/", async (req: Request, res: Response) => {
     try {
