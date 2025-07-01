@@ -1,14 +1,17 @@
 import express, { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import PDFDocument from "pdfkit";
-import crypto from "crypto"
+import crypto from "crypto";
 import { AppDataSource } from "../database/config";
 import { Manager } from "../entities/manager.entity";
 import { Roles } from "../enums/roles.enum";
 import { Modality } from "../entities/modality.entity";
 
 import { Token } from "../entities/token.entity";
-import { PASSWORD_RESET_BODY_TEMPLATE, sendEmail } from "../services/email-service";
+import {
+  PASSWORD_RESET_BODY_TEMPLATE,
+  sendEmail,
+} from "../services/email-service";
 import { isPasswordValid } from "../utils/isPasswordValid";
 
 const router = express.Router();
@@ -104,58 +107,66 @@ router
         "modality.enrollments",
         "enrollment",
         "enrollment.approved = :approved AND enrollment.active = :active",
-        {
-          approved: true,
-          active: true,
-        }
+        { approved: true, active: true }
       )
       .leftJoin("enrollment.athlete", "athlete")
-      .leftJoin("modality.atendiments", "atendiment")
+      // Subquery for unique class dates
       .leftJoin(
-        "modality.atendiments",
-        "atendiment_faltas",
-        "atendiment_faltas.present = :present",
-        { present: false }
+        "(SELECT modalityId, date(created_at) as class_date FROM atendiment GROUP BY modalityId, date(created_at))",
+        "unique_classes",
+        "unique_classes.modalityId = modality.id"
       )
+      // Regular join for attendance counts
+      .leftJoin("modality.atendiments", "atendiment")
       .select([
         "modality.id AS modality_id",
         "modality.name AS modality_name",
         "teacher.name AS teacher_name",
         "COUNT(DISTINCT athlete.id) AS total_alunos_ativos",
-        "COUNT(DISTINCT atendiment.id) AS total_atendimentos",
-        "COUNT(DISTINCT atendiment_faltas.id) AS total_faltas",
+        // Unique class sessions
+        "COUNT(DISTINCT unique_classes.class_date) AS total_atendimentos",
+        // Corrected attendance counts
+        "(SELECT COUNT(*) FROM atendiment a WHERE a.modalityId = modality.id AND a.present = 1) AS total_presencas",
+        "(SELECT COUNT(*) FROM atendiment a WHERE a.modalityId = modality.id AND a.present = 0) AS total_faltas",
       ])
-      .groupBy("modality.id, teacher.id")
+      .groupBy("modality.id, teacher.id, modality.name, teacher.name")
       .getRawMany();
 
     console.log("Gerando relatório de detalhamento");
     // 2. Consulta para detalhamento mensal (adaptada para SQLite)
     const monthlyDetails = await modalityRepository
       .createQueryBuilder("modality")
+      // Subquery for monthly unique classes
+      .leftJoin(
+        "(SELECT modalityId, strftime('%m', created_at) as month_num, date(created_at) as class_date FROM atendiment GROUP BY modalityId, strftime('%m', created_at), date(created_at))",
+        "monthly_classes",
+        "monthly_classes.modalityId = modality.id"
+      )
+      // Regular join for attendance counts
       .leftJoin("modality.atendiments", "atendiment")
       .select([
         "modality.id AS modality_id",
-        "strftime('%m', atendiment.created_at) AS month_number",
-        "CASE strftime('%m', atendiment.created_at) " +
-        "WHEN '01' THEN 'Janeiro' " +
-        "WHEN '02' THEN 'Fevereiro' " +
-        "WHEN '03' THEN 'Março' " +
-        "WHEN '04' THEN 'Abril' " +
-        "WHEN '05' THEN 'Maio' " +
-        "WHEN '06' THEN 'Junho' " +
-        "WHEN '07' THEN 'Julho' " +
-        "WHEN '08' THEN 'Agosto' " +
-        "WHEN '09' THEN 'Setembro' " +
-        "WHEN '10' THEN 'Outubro' " +
-        "WHEN '11' THEN 'Novembro' " +
-        "WHEN '12' THEN 'Dezembro' " +
-        "END AS month_name",
-        "COUNT(DISTINCT date(atendiment.created_at)) AS dias_com_atendimento",
-        "SUM(CASE WHEN atendiment.present = 1 THEN 1 ELSE 0 END) AS presencas",
-        "SUM(CASE WHEN atendiment.present = 0 THEN 1 ELSE 0 END) AS faltas",
+        "monthly_classes.month_num AS month_number",
+        "CASE monthly_classes.month_num " +
+          "WHEN '01' THEN 'Janeiro' " +
+          "WHEN '02' THEN 'Fevereiro' " +
+          "WHEN '03' THEN 'Março' " +
+          "WHEN '04' THEN 'Abril' " +
+          "WHEN '05' THEN 'Maio' " +
+          "WHEN '06' THEN 'Junho' " +
+          "WHEN '07' THEN 'Julho' " +
+          "WHEN '08' THEN 'Agosto' " +
+          "WHEN '09' THEN 'Setembro' " +
+          "WHEN '10' THEN 'Outubro' " +
+          "WHEN '11' THEN 'Novembro' " +
+          "WHEN '12' THEN 'Dezembro' " +
+          "END AS month_name",
+        "COUNT(DISTINCT monthly_classes.class_date) AS aulas_no_mes",
+        "(SELECT COUNT(*) FROM atendiment a WHERE a.modalityId = modality.id AND a.present = 1 AND strftime('%m', a.created_at) = monthly_classes.month_num) AS presencas",
+        "(SELECT COUNT(*) FROM atendiment a WHERE a.modalityId = modality.id AND a.present = 0 AND strftime('%m', a.created_at) = monthly_classes.month_num) AS faltas",
       ])
-      .groupBy("modality.id, month_number")
-      .orderBy("modality.id, month_number")
+      .groupBy("modality.id, monthly_classes.month_num")
+      .orderBy("modality.id, monthly_classes.month_num")
       .getRawMany();
 
     console.log("Mapeando os dados");
@@ -164,40 +175,45 @@ router
       const details = monthlyDetails
         .filter((detail) => detail.modality_id === modality.modality_id)
         .map((month) => {
-          const total = month.presencas + month.faltas;
+          const totalRecords = month.presencas + month.faltas;
           return {
             mes: month.month_name,
-            dias_com_atendimento: month.dias_com_atendimento,
+            aulas: month.aulas_no_mes,
             presencas: month.presencas,
             faltas: month.faltas,
             taxa_presenca:
-              total > 0
-                ? ((month.presencas / total) * 100).toFixed(2) + "%"
+              totalRecords > 0
+                ? ((month.presencas / totalRecords) * 100).toFixed(2) + "%"
                 : "0%",
           };
         });
+      // const totalAtendimentos = modality.total_atendimentos || 0;
+      // const totalFaltas = modality.total_faltas || 0;
+      // const totalPresencas = totalAtendimentos - totalFaltas;
 
-      const totalAtendimentos = modality.total_atendimentos || 0;
-      const totalFaltas = modality.total_faltas || 0;
-      const totalPresencas = totalAtendimentos - totalFaltas;
+      // const totalPresencas = details.reduce((sum, m) => sum + m.presencas, 0);
+      // const totalFaltas = details.reduce((sum, m) => sum + m.faltas, 0);
+      // const totalAtendimentos = totalPresencas + totalFaltas;
+
+      const totalRecords = modality.total_presencas + modality.total_faltas;
 
       return {
         modalidade: modality.modality_name,
         professor: modality.teacher_name || "Não atribuído",
         alunos_ativos: modality.total_alunos_ativos,
         totais: {
-          atendimentos: totalAtendimentos,
-          presencas: totalPresencas,
-          faltas: totalFaltas,
+          atendimentos: modality.total_atendimentos,
+          presencas: modality.total_presencas,
+          faltas: modality.total_faltas,
           taxa_presenca:
-            totalAtendimentos > 0
-              ? ((totalPresencas / totalAtendimentos) * 100).toFixed(2) + "%"
+            totalRecords > 0
+              ? ((modality.total_presencas / totalRecords) * 100).toFixed(2) +
+                "%"
               : "0%",
         },
         detalhamento_mensal: details,
       };
     });
-
     // 3. Criar o PDF
     const doc = new PDFDocument({ margin: 50, size: "A4" });
 
@@ -275,7 +291,7 @@ router
         headers: ["Mês", "Atendimentos", "Presenças", "Faltas", "Taxa"],
         rows: modality.detalhamento_mensal.map((m) => [
           m.mes,
-          m.dias_com_atendimento.toString(),
+          m.aulas.toString(),
           m.presencas.toString(),
           m.faltas.toString(),
           m.taxa_presenca,
@@ -333,19 +349,19 @@ router
         "modality.id AS modality_id",
         "strftime('%m', atendiment.created_at) AS month_number",
         "CASE strftime('%m', atendiment.created_at) " +
-        "WHEN '01' THEN 'Janeiro' " +
-        "WHEN '02' THEN 'Fevereiro' " +
-        "WHEN '03' THEN 'Março' " +
-        "WHEN '04' THEN 'Abril' " +
-        "WHEN '05' THEN 'Maio' " +
-        "WHEN '06' THEN 'Junho' " +
-        "WHEN '07' THEN 'Julho' " +
-        "WHEN '08' THEN 'Agosto' " +
-        "WHEN '09' THEN 'Setembro' " +
-        "WHEN '10' THEN 'Outubro' " +
-        "WHEN '11' THEN 'Novembro' " +
-        "WHEN '12' THEN 'Dezembro' " +
-        "END AS month_name",
+          "WHEN '01' THEN 'Janeiro' " +
+          "WHEN '02' THEN 'Fevereiro' " +
+          "WHEN '03' THEN 'Março' " +
+          "WHEN '04' THEN 'Abril' " +
+          "WHEN '05' THEN 'Maio' " +
+          "WHEN '06' THEN 'Junho' " +
+          "WHEN '07' THEN 'Julho' " +
+          "WHEN '08' THEN 'Agosto' " +
+          "WHEN '09' THEN 'Setembro' " +
+          "WHEN '10' THEN 'Outubro' " +
+          "WHEN '11' THEN 'Novembro' " +
+          "WHEN '12' THEN 'Dezembro' " +
+          "END AS month_name",
         "COUNT(DISTINCT date(atendiment.created_at)) AS dias_com_atendimento",
         "SUM(CASE WHEN atendiment.present = 1 THEN 1 ELSE 0 END) AS presencas",
         "SUM(CASE WHEN atendiment.present = 0 THEN 1 ELSE 0 END) AS faltas",
@@ -382,12 +398,16 @@ router
         professor: modality.teacher_name || "Não atribuído",
         alunos_ativos: modality.total_alunos_ativos,
         totais: {
-          atendimentos: totalAtendimentos,
-          presencas: totalPresencas,
-          faltas: totalFaltas,
+          aulas: modality.total_aulas,
+          registros: modality.total_registros,
+          presencas: modality.total_presencas,
+          faltas: modality.total_faltas,
           taxa_presenca:
-            totalAtendimentos > 0
-              ? ((totalPresencas / totalAtendimentos) * 100).toFixed(2) + "%"
+            modality.total_registros > 0
+              ? (
+                  (modality.total_presencas / modality.total_registros) *
+                  100
+                ).toFixed(2) + "%"
               : "0%",
         },
         detalhamento_mensal: details,
@@ -500,32 +520,39 @@ router
   .post("/password-reset", async (req, res) => {
     try {
       if (!req.body.email) {
-        return res.status(400).send({ error: "The manager's e-mail is required" });
+        return res
+          .status(400)
+          .send({ error: "The manager's e-mail is required" });
       }
 
-      const manager = await managerRepository.findOneBy({ email: req.body.email });
+      const manager = await managerRepository.findOneBy({
+        email: req.body.email,
+      });
 
       if (!manager)
-        return res.status(400).send({ error: "A manager with the given e-mail doesn't exist" });
+        return res
+          .status(400)
+          .send({ error: "A manager with the given e-mail doesn't exist" });
 
       var token = await tokenRepository.findOne({
-        where: { manager: { id: manager.id } }
+        where: { manager: { id: manager.id } },
       });
 
       if (!token) {
         token = tokenRepository.create({
           manager: manager,
           token: crypto.randomBytes(32).toString("hex"),
-        })
+        });
 
         await tokenRepository.save(token);
       }
 
       const link = `${process.env.BASE_URL}/manager/password-reset/${manager.id}/${token.token}`;
 
-      let email_body = PASSWORD_RESET_BODY_TEMPLATE
-        .replace("{{user_name}}", manager.name)
-        .replace("{{reset_link}}", link);
+      let email_body = PASSWORD_RESET_BODY_TEMPLATE.replace(
+        "{{user_name}}",
+        manager.name
+      ).replace("{{reset_link}}", link);
 
       await sendEmail(manager.email, "Password reset", email_body);
 
@@ -537,23 +564,28 @@ router
   })
   .post("/password-reset/:managerId/:token", async (req, res) => {
     try {
-      if (!isPasswordValid(req.body.password)) 
-      {
-        res.status(400).send("Password must have at least 8 characters. At least 1 uppercase and 1 lowercase letter. At least one digit. At least one special character");
+      if (!isPasswordValid(req.body.password)) {
+        res
+          .status(400)
+          .send(
+            "Password must have at least 8 characters. At least 1 uppercase and 1 lowercase letter. At least one digit. At least one special character"
+          );
         return;
       }
 
-      const manager = await managerRepository.findOneBy({ id: Number(req.params.managerId) });
+      const manager = await managerRepository.findOneBy({
+        id: Number(req.params.managerId),
+      });
 
       if (!manager) return res.status(400).send("invalid link or expired");
 
       const token = await tokenRepository.findOne({
         where: {
           manager: { id: manager.id },
-          token: req.params.token
+          token: req.params.token,
         },
-        relations: ["manager"]
-      })
+        relations: ["manager"],
+      });
 
       if (!token) return res.status(400).send("Invalid link or expired");
 
