@@ -112,7 +112,7 @@ router
       .leftJoin("enrollment.athlete", "athlete")
       // Subquery for unique class dates
       .leftJoin(
-        "(SELECT modalityId, date(created_at) as class_date FROM atendiment GROUP BY modalityId, date(created_at))",
+        "(SELECT modalityId, strftime('%m', created_at) as month_num, strftime('%Y-%m-%d %H:%M:%S', created_at) as class_date FROM atendiment GROUP BY modalityId, strftime('%m', created_at), strftime('%Y-%m-%d %H:%M:%S', created_at))",
         "unique_classes",
         "unique_classes.modalityId = modality.id"
       )
@@ -450,7 +450,7 @@ router.get("/relatorio-graficos", async (req: Request, res: Response) => {
       .select([
         "modality.id AS modality_id",
         "modality.name AS modality_name",
-        "COUNT(DISTINCT date(atendiment.created_at)) AS total_atendimentos",
+        "COUNT(DISTINCT atendiment.created_at) AS total_atendimentos",
       ])
       .leftJoin("modality.atendiments", "atendiment")
       .groupBy("modality.id")
@@ -514,7 +514,7 @@ router
             "WHEN '11' THEN 'Novembro' " +
             "WHEN '12' THEN 'Dezembro' " +
             "END AS month_name",
-          "COUNT(DISTINCT date(atendiment.created_at)) AS total_atendimentos",
+          "COUNT(DISTINCT strftime('%Y-%m-%d %H:%M:%S', atendiment.created_at)) AS total_atendimentos",
         ])
         .leftJoin("modality.atendiments", "atendiment")
         .groupBy("month_number")
