@@ -9,13 +9,13 @@ export const AppDataSource = new DataSource({
   // port: 3306,
   // username: 'root',
   // password: 'senha',
-  database: env.NODE_ENV ? "db.test.sqlite" : "db.sqlite",
+  database: env.NODE_ENV ? "db.sqlite" : "db.test.sqlite",
   // url:"",
-  synchronize: false, //sincroniza as alterações com o banco
+  synchronize: true, //sincroniza as alterações com o banco
   dropSchema: false, // !USAR SOMENTE EM DESENVOLVIMENTO: deleta todas as tabelas para sincronizar o banco
   logging: false, // loga as queries do banco
-  entities: ["src/entities/*{.ts,.js}"],
-  migrations: ["src/migrations/*.ts"],
+  entities: ["build/entities/*{.ts,.js}"],
+  migrations: ["build/migrations/*.ts"],
   migrationsTableName: "migrations",
 });
 
